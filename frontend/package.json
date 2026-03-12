@@ -1,0 +1,18 @@
+{
+  "name": "biocore-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "npx http-server public -p 8080"
+  }
+}
+/calorie-calculator
+|-- /public
+|   |-- index.html
+|   |-- styles.css
+|   |-- script.js
+|-- /server (if using a backend)
+|   |-- server.js
+|-- /data
+|   |-- foodData.json (or use an API)
+|-- package.json (if using Node.js)

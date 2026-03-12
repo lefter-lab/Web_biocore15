@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+DIR="$(cd "$(dirname "$0")" && pwd)"
+JAVA_EXE=${JAVA_HOME:+"$JAVA_HOME/bin/java"}
+if [ -z "$JAVA_EXE" ]; then
+  JAVA_EXE=java
+fi
+exec "$JAVA_EXE" -jar "$DIR/gradle/wrapper/gradle-wrapper.jar" "$@"
