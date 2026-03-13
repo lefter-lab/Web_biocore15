@@ -26,6 +26,10 @@ function render() {
     tbody.appendChild(tr)
   })
   $('#total').textContent = total
+  // also update metabolic panel default active kcal (use total as rough proxy)
+  if (document.getElementById('inputActive')) {
+    document.getElementById('inputActive').value = total
+  }
 }
 
 document.addEventListener('click', (e) => {
@@ -52,3 +56,21 @@ document.getElementById('foodForm').addEventListener('submit', (e) => {
 })
 
 render()
+
+// Compute metabolic split when user clicks Compute
+const btnCompute = document.getElementById('btnCompute')
+if (btnCompute) {
+  btnCompute.addEventListener('click', (e) => {
+    e.preventDefault()
+    const hr = Number(document.getElementById('inputHR').value) || 75
+    const activeK = Number(document.getElementById('inputActive').value) || 0
+    // Use calc helper attached to window
+    if (window.calc && typeof window.calc.calculateMetabolicSplit === 'function') {
+      const res = window.calc.calculateMetabolicSplit({ activeCalories: activeK, currentHR: hr })
+      const out = document.getElementById('metabolicOutput')
+      out.textContent = `Active: ${res.activeCalories} kcal\nCarbs: ${res.carbsKcal.toFixed(0)} kcal (${res.carbsGrams.toFixed(0)} g)\nFats: ${res.fatsKcal.toFixed(0)} kcal (${res.fatsGrams.toFixed(0)} g)\nProtein: ${res.proteinKcal.toFixed(0)} kcal (${res.proteinGrams.toFixed(0)} g)\n${res.catabolicWarning?res.catabolicWarning:''}`
+    } else {
+      alert('calc helper not loaded')
+    }
+  })
+}

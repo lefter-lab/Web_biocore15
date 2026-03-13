@@ -18,6 +18,16 @@
       <button type="submit">Добави</button>
     </form>
 
+      <section id="metabolicPanel" style="margin-bottom:12px;padding:10px;border:1px solid #ddd;border-radius:6px;">
+         <h3>Metabolic Split (test)</h3>
+         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <label>HR: <input id="inputHR" type="number" value="75" style="width:80px"/></label>
+            <label>Active kcal: <input id="inputActive" type="number" value="300" style="width:100px"/></label>
+            <button id="btnCompute">Compute</button>
+         </div>
+         <pre id="metabolicOutput" style="margin-top:8px;background:#f9f9f9;padding:8px;border-radius:4px;white-space:pre-wrap;"></pre>
+      </section>
+
     <table id="list">
       <thead>
         <tr><th>Храна</th><th>г</th><th>кал</th><th></th></tr>
@@ -27,7 +37,8 @@
 
     <div id="totals">Общо калории: <span id="total">0</span></div>
   </main>
-  <script src="js/app.js"></script>
+   <script src="js/calc.js"></script>
+   <script src="js/app.js"></script>
 </body>
 </html>
 Yes, you can definitely create a web application that calculates calories and nutrients using JavaScript, HTML, and CSS. You can also incorporate Kotlin for specific functionalities, especially if you want to leverage Kotlin's features or if you're using Kotlin/JS for the frontend. Here’s a general outline of how you can approach this project:
