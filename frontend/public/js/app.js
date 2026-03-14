@@ -10,104 +10,104 @@ function load() {
   return raw ? JSON.parse(raw) : []
 }
 
-function save(items) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)) }
+// JSON modal handlers
+const btnJson = document.getElementById('btnJson')
+const jsonModal = document.getElementById('jsonModal')
+const jsonList = document.getElementById('jsonList')
+const jsonFileInput = document.getElementById('jsonFileInput')
+const btnExportTxt = document.getElementById('btnExportTxt')
+const btnCloseJson = document.getElementById('btnCloseJson')
 
-function calcCalories(grams, calPer100) {
-  return Math.round((grams * calPer100) / 100)
+function openJsonModal() {
+  if (!jsonModal) return
+  jsonModal.style.display = 'block'
+  renderJsonList(new Date())
+}
+function closeJsonModal() {
+  if (!jsonModal) return
+  jsonModal.style.display = 'none'
+}
+if (btnJson) btnJson.addEventListener('click', openJsonModal)
+if (btnCloseJson) btnCloseJson.addEventListener('click', closeJsonModal)
+
+function formatTimeHHmm(ts) {
+  const d = new Date(ts)
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-// Absorption rates (g/h) and convert to g/min when used
-const ABSORPTION_GPH = { fastCarbs: 60.0, slowCarbs: 20.0, proteins: 15.0, fats: 5.0 }
-
-function loadMealsLog() {
-  const raw = localStorage.getItem('mealsLog')
-  return raw ? JSON.parse(raw) : []
+function sameLocalDate(d1, d2) {
+  return d1.getFullYear()===d2.getFullYear() && d1.getMonth()===d2.getMonth() && d1.getDate()===d2.getDate()
 }
 
-function saveMealsLog(list) { localStorage.setItem('mealsLog', JSON.stringify(list)) }
-
-function formatMinutesToHours(mins) {
-  if (!Number.isFinite(mins) || mins === Infinity) return '∞'
-  const h = Math.floor(mins / 60)
-  const m = Math.round(mins % 60)
-  if (h === 0) return `${m} мин.`
-  return `${h} ч. ${m} мин.`
-}
-
-function updateFineNutritionLog() {
+function renderJsonList(dateObj) {
   const meals = loadMealsLog()
-  const el = document.getElementById('tvFineNutritionStatus')
-  if (!el) return
-  // Build monospace log: for each meal show its status and time-to-empty (per-meal absorption)
-  const now = Date.now()
-  const lines = meals.slice().reverse().map(m => {
-    const t = new Date(m.timestamp)
-    const time = t.toLocaleTimeString()
-    const kcal = Math.round((m.grams * m.calPer100) / 100)
-    const fast = Number(m.fastCarbs || 0)
-    const slow = Number(m.slowCarbs || 0)
-    const prot = Number(m.proteins || 0)
-    const fat = Number(m.fats || 0)
+  const lines = meals.filter(m => {
+    if (!m.timestamp) return false
+    return sameLocalDate(new Date(m.timestamp), dateObj)
+  }).map(m => `${formatTimeHHmm(m.timestamp)} ${m.name || m.foodName || ''} ${m.grams||''} g`)
+  if (jsonList) jsonList.textContent = lines.join('\n') || '(no meals)'
+}
 
-    // Compute total absorption duration (minutes) using constants: fast 60 g/h, slow 20 g/h
-    const fastDurMin = fast > 0 ? (fast / ABSORPTION_GPH.fastCarbs) * 60 : 0
-    const slowDurMin = slow > 0 ? (slow / ABSORPTION_GPH.slowCarbs) * 60 : 0
-    const totalDurMin = fastDurMin + slowDurMin
+// Export TXT by selected date
+if (btnExportTxt) btnExportTxt.addEventListener('click', () => {
+  const dateInput = document.getElementById('exportDate')
+  let d = dateInput && dateInput.value ? new Date(dateInput.value) : new Date()
+  // normalize to midnight
+  d.setHours(0,0,0,0)
+  const meals = loadMealsLog().filter(m => m.timestamp && sameLocalDate(new Date(m.timestamp), d))
+  const lines = meals.map(m => `${formatTimeHHmm(m.timestamp)} ${m.name || m.foodName || ''} ${m.grams||''} g`)
+  const txt = lines.join('\n')
+  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `meals-${d.toISOString().slice(0,10)}.txt`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+})
 
-    // Prefer remaining fields if metabolic loop has initialized them
-    let remainingCarbs = (Number(m.remainingFast)||0) + (Number(m.remainingSlow)||0)
-    if (remainingCarbs === 0) {
-      const digestDelay = Number(localStorage.getItem('biocore_digest_delay_min') || 15)
-      const startMs = m.timestamp + digestDelay * 60000
-      remainingCarbs = fast + slow
-      if (now > startMs && totalDurMin > 0) {
-        const elapsedMin = (now - startMs) / 60000
-        const absorbedSoFar = Math.min(totalDurMin, elapsedMin) / totalDurMin * (fast + slow)
-        remainingCarbs = Math.max(0, (fast + slow) - absorbedSoFar)
-      }
+// JSON import handler
+if (jsonFileInput) jsonFileInput.addEventListener('change', (ev) => {
+  const f = ev.target.files && ev.target.files[0]
+  if (!f) return
+  const reader = new FileReader()
+  reader.onload = function(e) {
+    try {
+      const txt = e.target.result
+      const parsed = JSON.parse(txt)
+      const arr = Array.isArray(parsed) ? parsed : [parsed]
+      const meals = loadMealsLog()
+      let added = 0, skipped = 0
+      arr.forEach(it => {
+        const ts = Number(it.timestamp) || Date.now()
+        const name = it.foodName || it.name || 'imported'
+        const fast = Number(it.fastCarbs) || 0
+        const slow = Number(it.slowCarbs) || 0
+        const proteins = Number(it.proteins) || 0
+        const fats = Number(it.fats) || 0
+        const kcal = Number(it.kcal) || 0
+        if (isNaN(ts) || (!name)) { skipped++; return }
+        // ensure at least one macro exists
+        if (fast===0 && slow===0 && proteins===0 && fats===0) { skipped++; return }
+        const entry = { name, grams: (it.grams||0), calPer100: (it.calPer100||0), timestamp: ts }
+        // add fine meal fields
+        const fine = { name, grams: (it.grams||0), calPer100: (it.calPer100||0), timestamp: ts, kcal, fastCarbs: fast, slowCarbs: slow, proteins, fats, remainingFast: fast, remainingSlow: slow, remainingProt: proteins, remainingFat: fats }
+        meals.push(fine)
+        added++
+      })
+      saveMealsLog(meals)
+      updateFineNutritionLog()
+      render()
+      renderJsonList(new Date())
+      console.log(`Imported ${added} items, skipped ${skipped}`)
+    } catch (err) {
+      console.error('Import failed', err)
     }
-
-    // Time to absorb remaining carbs (minutes) using current absorption capacity for this meal: assume same rate distribution
-    // For simplicity compute remaining time = remainingCarbs / currentMealAbsorptionRate(g/min)
-    const mealAbsorptionGPerMin = (ABSORPTION_GPH.fastCarbs/60) * (fast / Math.max(1, (fast+slow))) + (ABSORPTION_GPH.slowCarbs/60) * (slow / Math.max(1, (fast+slow)))
-    const timeToEmptyMin = mealAbsorptionGPerMin > 0 ? (remainingCarbs / mealAbsorptionGPerMin) : Infinity
-
-    return `${time} | ${m.name} | ${kcal} kcal | carbs ${fast+slow}g | remaining ${Math.round(remainingCarbs)}g | TTE: ${formatMinutesToHours(timeToEmptyMin)}`
-  })
-
-  // Blood Influx summary (current per-minute rates across meals)
-  let influxC = 0, influxP = 0, influxF = 0
-  const now2 = Date.now()
-  meals.forEach(m => {
-    const digestDelay = Number(localStorage.getItem('biocore_digest_delay_min') || 15)
-    const startMs = m.timestamp + digestDelay * 60000
-    const fast = Number(m.fastCarbs || 0)
-    const slow = Number(m.slowCarbs || 0)
-    const prot = Number(m.proteins || 0)
-    const fat = Number(m.fats || 0)
-
-    // fast window
-    if (fast > 0) {
-      const fastDurMs = (fast / ABSORPTION_GPH.fastCarbs) * 3600000
-      const fastStart = startMs
-      const fastEnd = fastStart + fastDurMs
-      if (now2 >= fastStart && now2 <= fastEnd) influxC += (ABSORPTION_GPH.fastCarbs/60)
-    }
-    // slow window
-    if (slow > 0) {
-      const slowDurMs = (slow / ABSORPTION_GPH.slowCarbs) * 3600000
-      const slowStart = startMs
-      const slowEnd = slowStart + slowDurMs
-      if (now2 >= slowStart && now2 <= slowEnd) influxC += (ABSORPTION_GPH.slowCarbs/60)
-    }
-    if (prot > 0) {
-      const protDurMs = (prot / ABSORPTION_GPH.proteins) * 3600000
-      const pStart = startMs
-      const pEnd = pStart + protDurMs
-      if (now2 >= pStart && now2 <= pEnd) influxP += (ABSORPTION_GPH.proteins/60)
-    }
-    if (fat > 0) {
-      const fDurMs = (fat / ABSORPTION_GPH.fats) * 3600000
+  }
+  reader.readAsText(f)
+})
       const fStart = startMs
       const fEnd = fStart + fDurMs
       if (now2 >= fStart && now2 <= fEnd) influxF += (ABSORPTION_GPH.fats/60)
