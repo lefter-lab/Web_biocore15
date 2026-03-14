@@ -212,6 +212,17 @@ function metabolicLoop() {
     const pct = Math.min(100, (glyc / 500) * 100)
     glycBar.style.width = pct + '%'
     glycBar.textContent = `${glyc.toFixed(1)} g`
+    // visual feedback: color based on mode
+    if (mode === 'Fat Burn') {
+      glycBar.classList.add('glycogen-fatburn')
+      glycBar.classList.remove('glycogen-musclebuild')
+    } else if (mode === 'Muscle Build') {
+      glycBar.classList.add('glycogen-musclebuild')
+      glycBar.classList.remove('glycogen-fatburn')
+    } else {
+      glycBar.classList.remove('glycogen-fatburn')
+      glycBar.classList.remove('glycogen-musclebuild')
+    }
   }
 }
 
@@ -322,7 +333,7 @@ const btnNight = document.getElementById('btnNightTest')
 if (btnNight) btnNight.addEventListener('click', () => {
   const panel = document.getElementById('nightTestPanel')
   if (!panel) return
-  panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none'
+  panel.classList.toggle('hidden')
 })
 const btnNightSubmit = document.getElementById('btnNightSubmit')
 if (btnNightSubmit) btnNightSubmit.addEventListener('click', (ev) => {

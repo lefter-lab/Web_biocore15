@@ -24,19 +24,20 @@
       <div class="card" id="cardTotalOut">Total Out<br><span class="card-value" id="tvTotalOut">-</span></div>
       <div class="card" id="cardDailyBalance">Balance<br><span class="card-value" id="tvDailyBalance">-</span></div>
       <div class="card" id="cardActiveKcal">Active Kcal<br><span class="card-value" id="tvActiveKcal">-</span></div>
-      <div class="card" id="cardMode">Mode<br>
-         <select id="metabolicMode" style="margin-top:6px;padding:6px;border-radius:6px;border:1px solid #333;background:#111;color:#fff">
-            <option value="Fat Burn">Fat Burn</option>
-            <option value="Muscle Build">Muscle Build</option>
-            <option value="Maintenance">Maintenance</option>
-            <option value="Brain Power">Brain Power</option>
-            <option value="Deep Recovery">Deep Recovery</option>
-         </select>
-      </div>
-      <button id="btnNightTest" class="small" style="position:absolute;right:8px;top:8px;">NIGHT TEST</button>
    </section>
 
-   <div id="nightTestPanel" style="display:none;padding:10px;margin-top:8px;background:#0f0f0f;border-radius:8px;border:1px solid #222;max-width:420px">
+   <div class="mode-selector-container" style="text-align:center; margin: 15px 0;">
+      <label for="metabolicMode" style="color:#2a9d8f; font-weight:bold; margin-right:10px;">METABOLIC TARGET:</label>
+      <select id="metabolicMode" style="padding:10px; border-radius:8px; background:#1a1a1a; color:#fff; border:2px solid #2a9d8f; font-size:16px;">
+         <option value="Fat Burn">🔥 Fat Burn Mode</option>
+         <option value="Muscle Build">💪 Muscle Build Mode</option>
+         <option value="Maintenance">⚖️ Maintenance</option>
+         <option value="Brain Power">🧠 Brain Power</option>
+         <option value="Deep Recovery">💤 Deep Recovery</option>
+      </select>
+   </div>
+
+   <div id="nightTestPanel" class="night-panel hidden" style="padding:10px;margin-top:8px;background:#0f0f0f;border-radius:8px;border:1px solid #222;max-width:420px">
       <div style="color:#ddd;margin-bottom:6px;font-weight:600">Night Test — въведи тегло</div>
       <div style="display:flex;gap:8px;align-items:center">
          <input id="nightEvening" type="number" placeholder="Вечерно тегло (kg)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
@@ -62,6 +63,7 @@
          <button id="btnEditKcal" class="small btn-edit">Edit KCAL</button>
          <button id="btnEditHR" class="small btn-edit">Edit HR</button>
          <button id="btnEditFood" class="small btn-food">Edit Food</button>
+         <button id="btnNightTest" class="small btn-night" style="margin-left:8px;background:#FF9800;color:#000;border:none;padding:8px 12px;border-radius:8px">NIGHT TEST</button>
       </section>
 
       <!-- single step panel under the logo (keeps UI tidy) -->
