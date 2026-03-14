@@ -51,14 +51,17 @@ function updateFineNutritionLog() {
     const slowDurMin = slow > 0 ? (slow / ABSORPTION_GPH.slowCarbs) * 60 : 0
     const totalDurMin = fastDurMin + slowDurMin
 
-    // Remaining grams to absorb (naive): if now before start, remaining=fast+slow; if during, compute elapsed
-    const digestDelay = Number(localStorage.getItem('biocore_digest_delay_min') || 15)
-    const startMs = m.timestamp + digestDelay * 60000
-    let remainingCarbs = fast + slow
-    if (now > startMs && totalDurMin > 0) {
-      const elapsedMin = (now - startMs) / 60000
-      const absorbedSoFar = Math.min(totalDurMin, elapsedMin) / totalDurMin * (fast + slow)
-      remainingCarbs = Math.max(0, (fast + slow) - absorbedSoFar)
+    // Prefer remaining fields if metabolic loop has initialized them
+    let remainingCarbs = (Number(m.remainingFast)||0) + (Number(m.remainingSlow)||0)
+    if (remainingCarbs === 0) {
+      const digestDelay = Number(localStorage.getItem('biocore_digest_delay_min') || 15)
+      const startMs = m.timestamp + digestDelay * 60000
+      remainingCarbs = fast + slow
+      if (now > startMs && totalDurMin > 0) {
+        const elapsedMin = (now - startMs) / 60000
+        const absorbedSoFar = Math.min(totalDurMin, elapsedMin) / totalDurMin * (fast + slow)
+        remainingCarbs = Math.max(0, (fast + slow) - absorbedSoFar)
+      }
     }
 
     // Time to absorb remaining carbs (minutes) using current absorption capacity for this meal: assume same rate distribution
@@ -110,7 +113,83 @@ function updateFineNutritionLog() {
 
   const influxLine = `Blood Influx — carbs: ${influxC.toFixed(2)} g/min | protein: ${influxP.toFixed(2)} g/min | fats: ${influxF.toFixed(2)} g/min`
   el.textContent = lines.join('\n') + '\n\n' + influxLine
+  // Also update the bottom Blood Influx UI if present
+  const tvBI = document.getElementById('tvBloodInflux')
+  if (tvBI) tvBI.textContent = `Blood Influx: ${influxC.toFixed(2)} g/min`
 }
+
+// Metabolic engine loop: absorbs from meals into glycogen and handles spillover
+function metabolicLoop() {
+  const meals = loadMealsLog()
+  const now = Date.now()
+  // Use window.Calc if available, otherwise fallback to local logic
+  let result = { absorbedGrams: { carbs:0, protein:0, fats:0 }, influxRateGPerMin: { carbs:0, protein:0, fats:0 } }
+  if (window.Calc && typeof window.Calc.absorbMealsForInterval === 'function') {
+    result = window.Calc.absorbMealsForInterval(meals, now, 5)
+  }
+  // Persist mutated meals (remaining* updated)
+  saveMealsLog(meals)
+
+  // Glycogen and fat storage in localStorage
+  const glycKey = 'biocore_glycogen'
+  const fatKey = 'biocore_fat_from_carbs'
+  let glyc = Number(localStorage.getItem(glycKey) || 0)
+  let fatFromCarbs = Number(localStorage.getItem(fatKey) || 0)
+
+  // Add absorbed carbs to glycogen (grams)
+  const absorbedCarbs = result.absorbedGrams.carbs || 0
+  const spill = window.Calc ? window.Calc.calculateGlycogenUpdate(glyc, absorbedCarbs) : { newGlycogen: glyc + absorbedCarbs, addedToFat: 0 }
+  glyc = spill.newGlycogen
+  fatFromCarbs += spill.addedToFat
+  localStorage.setItem(glycKey, glyc)
+  localStorage.setItem(fatKey, fatFromCarbs)
+
+  // Compute current burn (g/min carbs) from stored user HR and BMR data
+  const hr = Number(localStorage.getItem('biocore_hr') || 70)
+  const weight = Number(localStorage.getItem('biocore_weight') || 70)
+  const height = Number(localStorage.getItem('biocore_height') || 170)
+  const age = Number(localStorage.getItem('biocore_age') || 30)
+  const gender = localStorage.getItem('biocore_gender') || 'male'
+  const activeKcalDay = Number(localStorage.getItem('biocore_active_kcal') || 0)
+  const bmr = window.Calc ? window.Calc.calculateBMR(weight, height, age, gender) : 0
+  const burnGPerMin = window.Calc ? window.Calc.calculateMinuteBurn(hr, bmr, activeKcalDay) : 0
+
+  // Update metabolic UI
+  const tv = document.getElementById('tvMetabolicStatus')
+  if (tv) {
+    const status = (result.influxRateGPerMin.carbs > burnGPerMin) ? 'STORING ENERGY' : 'BURNING FAT'
+    tv.innerHTML = `Glycogen: ${glyc.toFixed(1)}g<br>Blood Influx: ${result.influxRateGPerMin.carbs.toFixed(2)} g/min<br>Status: ${status}<br>BMR: ${Math.round(bmr)} kcal`
+  }
+
+  // Update top cards
+  const tvHR = document.getElementById('tvHR')
+  if (tvHR) tvHR.textContent = hr
+  const tvTotalOut = document.getElementById('tvTotalOut')
+  if (tvTotalOut) tvTotalOut.textContent = `${Math.round(bmr + (activeKcalDay||0))} kcal/day`
+  const tvDailyBalance = document.getElementById('tvDailyBalance')
+  if (tvDailyBalance) {
+    const totalIn = Number(document.getElementById('total')?.textContent || 0)
+    const totalOut = Math.round((bmr + (activeKcalDay||0)))
+    tvDailyBalance.textContent = `${totalIn - totalOut} kcal`
+  }
+  const tvActive = document.getElementById('tvActiveKcal')
+  if (tvActive) tvActive.textContent = `${Math.round(activeKcalDay)} kcal`
+  const tvTopMet = document.getElementById('tvTopMetabolic')
+  if (tvTopMet) tvTopMet.textContent = `Glycogen ${glyc.toFixed(0)}g • Influx ${result.influxRateGPerMin.carbs.toFixed(2)} g/min`
+
+  // Update Glycogen tank progress visual if present
+  const glycBar = document.getElementById('glycogenBar')
+  if (glycBar) {
+    const pct = Math.min(100, (glyc / 500) * 100)
+    glycBar.style.width = pct + '%'
+    glycBar.textContent = `${glyc.toFixed(1)} g`
+  }
+}
+
+// Start metabolic loop every 5 seconds
+setInterval(metabolicLoop, 5000)
+// Run once on load
+metabolicLoop()
 
 // Return human-friendly relative time string (BG)
 function getRelativeTime(timestamp) {
@@ -181,6 +260,10 @@ document.getElementById('foodForm').addEventListener('submit', (e) => {
   const name = $('#foodName').value.trim()
   const grams = Number($('#grams').value) || 0
   const calPer100 = Number($('#calPer100').value) || 0
+  const fast = Number($('#fastCarbs').value) || 0
+  const slow = Number($('#slowCarbs').value) || 0
+  const prot = Number($('#proteins').value) || 0
+  const fat = Number($('#fats').value) || 0
   if (!name || grams <= 0) return
   const items = load()
   const entry = { name, grams, calPer100, timestamp: Date.now() }
@@ -190,9 +273,8 @@ document.getElementById('foodForm').addEventListener('submit', (e) => {
   e.target.reset()
   // Add to meals log for fine nutrition
   const kcal = Math.round((grams * calPer100) / 100)
-  const carbsEst = Math.round((kcal * 0.5) / 4)
   const meals = loadMealsLog()
-  meals.push({ name, grams, calPer100, timestamp: Date.now(), kcal, carbsGrams: carbsEst })
+  meals.push({ name, grams, calPer100, timestamp: Date.now(), kcal, fastCarbs: fast, slowCarbs: slow, proteins: prot, fats: fat, remainingFast: fast, remainingSlow: slow, remainingProt: prot, remainingFat: fat })
   saveMealsLog(meals)
   updateFineNutritionLog()
 })

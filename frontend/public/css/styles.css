@@ -1,18 +1,38 @@
-body{font-family:Arial,Helvetica,sans-serif;margin:16px}
+body{font-family:Arial,Helvetica,sans-serif;margin:16px;background:#121212;color:#ffffff}
 header h1{margin:0 0 12px}
-/* Dark mode base */
-body.dark { background:#121212; color:#e6eef8 }
+/* Dark mode base (default) */
+body.dark { background:#121212; color:#ffffff }
 
 .header-row{display:flex;align-items:center;gap:12px}
-#logo{height:40px}
-.small{padding:4px 8px;font-size:13px}
+#logo{height:56px}
+.small{padding:6px 10px;font-size:13px;border-radius:6px}
+
+/* Card grid */
+.cards-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.card{background:#1e1e1e;color:#fff;padding:10px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.4);text-align:center}
+.card .card-value{font-size:18px;font-weight:700;margin-top:6px;display:block}
 
 /* Step progress */
-.step-progress{width:220px;height:10px;background:#e6f0ff;border-radius:6px;overflow:hidden;margin-top:6px}
-.step-bar{height:100%;width:40%;background:#0078d4}
+.step-progress{width:100%;height:12px;background:#222;border-radius:8px;overflow:hidden;margin-top:8px}
+.step-bar{height:100%;width:40%;background:#2a9d8f}
 
-/* Light log panel */
-#logPanel, #log { background:#F0F7FF }
+/* Step count */
+#tvStepCount{font-size:42px;text-align:center;font-weight:700;color:#fff;margin-top:6px}
+
+/* Log / console panel */
+#tvFineNutritionStatus{background:#000;color:#00ff88;font-family:monospace;padding:15px;border-radius:8px;min-height:160px;white-space:pre-wrap}
+
+/* small helper colors for top buttons */
+.btn-food{background:#FF9800;border:none;color:#000}
+.btn-sync{background:#4CAF50;border:none;color:#fff}
+.btn-edit{background:#F44336;border:none;color:#fff}
+
+/* Bottom fixed action bar */
+#bottomBar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;padding:8px 12px;background:#0f0f0f;border-top:1px solid #222}
+.bottom-btn{padding:10px 16px;border-radius:8px;background:#222;color:#fff;border:none}
+
+/* Glycogen bar styling */
+#glycogenBar{background:#2a9d8f;color:#fff;text-align:center}
 
 /* Inline error messages */
 .error-text{color:#b42323;font-size:12px;margin-top:2px;display:none}

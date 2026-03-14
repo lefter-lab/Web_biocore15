@@ -11,9 +11,20 @@
       <div class="header-row">
          <img src="images/logo.png" alt="Biocore logo" id="logo" onerror="this.style.display='none'" />
          <h1>Biocore — Калкулатор на калории</h1>
-         <button id="btnReload" class="small">SYNC</button>
+         <button id="btnReload" class="small btn-sync">SYNC</button>
       </div>
    </header>
+
+   <div id="headerSteps" style="text-align:center;margin-top:8px;">
+      <div id="tvStepCount">Стъпки: 0</div>
+      <div class="step-progress" aria-hidden="true" style="margin:10px auto;max-width:320px;"><div id="stepBar" class="step-bar"></div></div>
+   </div>
+   <section id="topCards" class="cards-grid" style="padding:10px;">
+      <div class="card" id="cardHR">HR<br><span class="card-value" id="tvHR">-</span></div>
+      <div class="card" id="cardTotalOut">Total Out<br><span class="card-value" id="tvTotalOut">-</span></div>
+      <div class="card" id="cardDailyBalance">Balance<br><span class="card-value" id="tvDailyBalance">-</span></div>
+      <div class="card" id="cardActiveKcal">Active Kcal<br><span class="card-value" id="tvActiveKcal">-</span></div>
+   </section>
    <main>
       <form id="foodForm">
          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -29,9 +40,9 @@
       </form>
 
       <section id="quickActions" style="margin-bottom:12px;display:flex;gap:8px;align-items:center;">
-         <button id="btnEditKcal" class="small">Edit KCAL</button>
-         <button id="btnEditHR" class="small">Edit HR</button>
-         <button id="btnEditFood" class="small">Edit Food</button>
+         <button id="btnEditKcal" class="small btn-edit">Edit KCAL</button>
+         <button id="btnEditHR" class="small btn-edit">Edit HR</button>
+         <button id="btnEditFood" class="small btn-food">Edit Food</button>
       </section>
 
       <section id="stepPanel" style="margin-bottom:12px;padding:10px;border-radius:6px;background:#F0F7FF;">
@@ -40,12 +51,23 @@
                <div id="tvStepCount">Стъпки: 0</div>
                <div class="step-progress" aria-hidden="true"><div id="stepBar" class="step-bar"></div></div>
             </div>
-            <div id="tvMetabolicStatus">Метаболичен статус: -</div>
+            <div id="tvTopMetabolic">Метаболичен статус: -</div>
          </div>
       </section>
 
       <section id="nutritionStatus" style="margin-bottom:12px;padding:10px;border:1px solid #ddd;border-radius:6px;">
          <div id="tvFineNutritionStatus" style="font-family:monospace;white-space:pre-wrap;">Nutrition log will appear here</div>
+      </section>
+
+      <section id="fineBottom" style="margin-bottom:12px;padding:10px;border-radius:6px;background:transparent;border:1px solid #222;">
+         <div style="margin-bottom:8px;font-weight:600;color:#ccc">Glycogen Tank</div>
+         <div style="height:22px;background:#222;border-radius:4px;overflow:hidden;position:relative;">
+            <div id="glycogenBar" style="height:100%;width:0%;background:#2a9d8f;color:white;display:flex;align-items:center;justify-content:center;font-size:12px">0 g</div>
+         </div>
+         <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;color:#ddd">
+            <div id="tvBloodInflux">Blood Influx: 0.00 g/min</div>
+            <div id="tvMetabolicStatus">Метаболичен статус: -</div>
+         </div>
       </section>
 
       <section id="logPanel" style="margin-bottom:12px;padding:10px;border-radius:6px;background:#F0F7FF;">
@@ -61,6 +83,12 @@
 
       <div id="totals">Общо калории: <span id="total">0</span></div>
    </main>
+   <footer id="bottomBar">
+      <button id="btnSteps" class="bottom-btn">STEPS</button>
+      <button id="btnProfile" class="bottom-btn">PROFILE</button>
+      <button id="btnJson" class="bottom-btn">JSON</button>
+   </footer>
+   <script src="js/calc.js"></script>
    <script src="js/app.js"></script>
 </body>
 </html>
