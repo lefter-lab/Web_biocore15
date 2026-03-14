@@ -15,6 +15,8 @@ function calcCalories(grams, calPer100) {
 
 function render() {
   const items = load()
+  // sort newest first by timestamp
+  items.sort((a,b) => (b.timestamp||0) - (a.timestamp||0))
   const tbody = $('#list tbody')
   tbody.innerHTML = ''
   let total = 0
@@ -22,7 +24,8 @@ function render() {
     const tr = document.createElement('tr')
     const cal = calcCalories(it.grams, it.calPer100)
     total += cal
-    tr.innerHTML = `<td>${it.name}</td><td>${it.grams}</td><td>${cal}</td><td><button data-idx="${idx}" class="delete">X</button> <button data-edit="${idx}" class="edit">Edit</button></td>`
+    const timeText = it.timestamp ? new Date(it.timestamp).toLocaleString() : ''
+    tr.innerHTML = `<td>${timeText}</td><td>${it.name}</td><td>${it.grams}</td><td>${cal}</td><td><button data-idx="${idx}" class="delete">X</button> <button data-edit="${idx}" class="edit">Edit</button></td>`
     tbody.appendChild(tr)
   })
   $('#total').textContent = total
@@ -65,15 +68,22 @@ document.getElementById('foodForm').addEventListener('submit', (e) => {
   const name = $('#name').value.trim()
   const grams = Number($('#grams').value) || 0
   const calPer100 = Number($('#calPer100').value) || 0
-  if (!name || grams <= 0) return
+  // Basic validations
+  if (!name) { alert('Име на храната е задължително'); return }
+  if (name.length > 100) { alert('Името е твърде дълго (макс 100 символа)'); return }
+  if (!(Number.isFinite(grams)) || grams <= 0) { alert('Грамажът трябва да е число > 0'); return }
+  if (grams > 100000) { alert('Грамажът е нереално голям'); return }
+  if (!(Number.isFinite(calPer100)) || calPer100 < 0) { alert('Кал/100г трябва да бъде >= 0'); return }
+  if (calPer100 > 20000) { alert('Кал/100г е нереално голямо'); return }
   const items = load()
   if (typeof window._editingIndex === 'number') {
     // update existing
-    items[window._editingIndex] = { name, grams, calPer100 }
+    const existing = items[window._editingIndex]
+    items[window._editingIndex] = { name, grams, calPer100, timestamp: existing ? existing.timestamp : Date.now() }
     delete window._editingIndex
     $('#foodForm button[type=submit]').textContent = 'Добави'
   } else {
-    items.push({ name, grams, calPer100 })
+    items.push({ name, grams, calPer100, timestamp: Date.now() })
   }
   save(items)
   render()
