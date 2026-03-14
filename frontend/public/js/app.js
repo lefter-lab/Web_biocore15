@@ -22,7 +22,7 @@ function render() {
     const tr = document.createElement('tr')
     const cal = calcCalories(it.grams, it.calPer100)
     total += cal
-    tr.innerHTML = `<td>${it.name}</td><td>${it.grams}</td><td>${cal}</td><td><button data-idx="${idx}">X</button></td>`
+    tr.innerHTML = `<td>${it.name}</td><td>${it.grams}</td><td>${cal}</td><td><button data-idx="${idx}" class="delete">X</button> <button data-edit="${idx}" class="edit">Edit</button></td>`
     tbody.appendChild(tr)
   })
   $('#total').textContent = total
@@ -33,13 +33,31 @@ function render() {
 }
 
 document.addEventListener('click', (e) => {
-  const btn = e.target.closest('button[data-idx]')
-  if (!btn) return
-  const idx = Number(btn.dataset.idx)
-  const items = load()
-  items.splice(idx, 1)
-  save(items)
-  render()
+  const del = e.target.closest('button.delete')
+  if (del) {
+    const idx = Number(del.dataset.idx)
+    const items = load()
+    items.splice(idx, 1)
+    save(items)
+    render()
+    return
+  }
+
+  const edit = e.target.closest('button.edit')
+  if (edit) {
+    const idx = Number(edit.dataset.edit)
+    const items = load()
+    const it = items[idx]
+    if (!it) return
+    // populate form for editing
+    $('#name').value = it.name
+    $('#grams').value = it.grams
+    $('#calPer100').value = it.calPer100
+    // mark editing index
+    window._editingIndex = idx
+    $('#foodForm button[type=submit]').textContent = 'Запази'
+    return
+  }
 })
 
 document.getElementById('foodForm').addEventListener('submit', (e) => {
@@ -49,7 +67,14 @@ document.getElementById('foodForm').addEventListener('submit', (e) => {
   const calPer100 = Number($('#calPer100').value) || 0
   if (!name || grams <= 0) return
   const items = load()
-  items.push({ name, grams, calPer100 })
+  if (typeof window._editingIndex === 'number') {
+    // update existing
+    items[window._editingIndex] = { name, grams, calPer100 }
+    delete window._editingIndex
+    $('#foodForm button[type=submit]').textContent = 'Добави'
+  } else {
+    items.push({ name, grams, calPer100 })
+  }
   save(items)
   render()
   e.target.reset()
