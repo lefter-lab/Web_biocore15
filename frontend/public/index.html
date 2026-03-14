@@ -19,12 +19,22 @@
       <div id="tvStepCount">Стъпки: 0</div>
       <div class="step-progress" aria-hidden="true" style="margin:10px auto;max-width:320px;"><div id="stepBar" class="step-bar"></div></div>
    </div>
-   <section id="topCards" class="cards-grid" style="padding:10px;">
+   <section id="topCards" class="cards-grid" style="padding:10px;position:relative;">
       <div class="card" id="cardHR">HR<br><span class="card-value" id="tvHR">-</span></div>
       <div class="card" id="cardTotalOut">Total Out<br><span class="card-value" id="tvTotalOut">-</span></div>
       <div class="card" id="cardDailyBalance">Balance<br><span class="card-value" id="tvDailyBalance">-</span></div>
       <div class="card" id="cardActiveKcal">Active Kcal<br><span class="card-value" id="tvActiveKcal">-</span></div>
+      <button id="btnNightTest" class="small" style="position:absolute;right:8px;top:8px;">NIGHT TEST</button>
    </section>
+
+   <div id="nightTestPanel" style="display:none;padding:10px;margin-top:8px;background:#0f0f0f;border-radius:8px;border:1px solid #222;max-width:420px">
+      <div style="color:#ddd;margin-bottom:6px;font-weight:600">Night Test — въведи тегло</div>
+      <div style="display:flex;gap:8px;align-items:center">
+         <input id="nightEvening" type="number" placeholder="Вечерно тегло (kg)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
+         <input id="nightMorning" type="number" placeholder="Сутрешно тегло (kg)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
+         <button id="btnNightSubmit" class="small" style="background:#2a9d8f;border:none;color:#000;padding:8px 10px;border-radius:6px">SUBMIT</button>
+      </div>
+   </div>
    <main>
       <form id="foodForm">
          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">

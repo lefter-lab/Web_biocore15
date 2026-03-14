@@ -1,5 +1,8 @@
 const STORAGE_KEY = 'biocore_items'
 
+// Sync state
+let isSynced = false
+
 function $(sel) { return document.querySelector(sel) }
 
 function load() {
@@ -244,6 +247,26 @@ document.addEventListener('click', (e) => {
   save(items)
   render()
 })
+// handleSync implementation
+function handleSync() {
+  const btn = document.getElementById('btnReload')
+  if (!isSynced) {
+    console.log("Initial Sync...")
+    isSynced = true
+    if (btn) {
+      btn.innerText = "RELOAD"
+      btn.classList.add('synced')
+    }
+  } else {
+    console.log("Reloading data...")
+    // refresh UI data
+    render()
+    updateFineNutritionLog()
+    metabolicLoop()
+  }
+}
+const btnReload = document.getElementById('btnReload')
+if (btnReload) btnReload.addEventListener('click', handleSync)
 // btnEditFood: scroll to form and focus #foodName
 const btnF = document.getElementById('btnEditFood')
 if (btnF) btnF.addEventListener('click', () => {
@@ -253,6 +276,25 @@ if (btnF) btnF.addEventListener('click', () => {
   if (name) {
     name.focus()
   }
+})
+
+// Night test toggle and submit handlers
+const btnNight = document.getElementById('btnNightTest')
+if (btnNight) btnNight.addEventListener('click', () => {
+  const panel = document.getElementById('nightTestPanel')
+  if (!panel) return
+  panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none'
+})
+const btnNightSubmit = document.getElementById('btnNightSubmit')
+if (btnNightSubmit) btnNightSubmit.addEventListener('click', (ev) => {
+  ev.preventDefault()
+  const eve = Number(document.getElementById('nightEvening')?.value || 0)
+  const mor = Number(document.getElementById('nightMorning')?.value || 0)
+  if (eve > 0) localStorage.setItem('night_evening_weight', eve)
+  if (mor > 0) localStorage.setItem('night_morning_weight', mor)
+  console.log('Night test saved', { evening: eve, morning: mor })
+  const panel = document.getElementById('nightTestPanel')
+  if (panel) panel.style.display = 'none'
 })
 
 document.getElementById('foodForm').addEventListener('submit', (e) => {
