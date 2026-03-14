@@ -55,15 +55,7 @@
          <button id="btnEditFood" class="small btn-food">Edit Food</button>
       </section>
 
-      <section id="stepPanel" style="margin-bottom:12px;padding:10px;border-radius:6px;background:#F0F7FF;">
-         <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div>
-               <div id="tvStepCount">Стъпки: 0</div>
-               <div class="step-progress" aria-hidden="true"><div id="stepBar" class="step-bar"></div></div>
-            </div>
-            <div id="tvTopMetabolic">Метаболичен статус: -</div>
-         </div>
-      </section>
+      <!-- single step panel under the logo (keeps UI tidy) -->
 
       <section id="nutritionStatus" style="margin-bottom:12px;padding:10px;border:1px solid #ddd;border-radius:6px;">
          <div id="tvFineNutritionStatus" style="font-family:monospace;white-space:pre-wrap;">Nutrition log will appear here</div>
@@ -80,9 +72,7 @@
          </div>
       </section>
 
-      <section id="logPanel" style="margin-bottom:12px;padding:10px;border-radius:6px;background:#F0F7FF;">
-         <div id="log" style="font-size:13px;color:#073e6b;">Log panel</div>
-      </section>
+      <!-- removed duplicate log panel; tvFineNutritionStatus is the single authoritative console -->
 
       <table id="list">
          <thead>

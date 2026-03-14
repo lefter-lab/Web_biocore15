@@ -48,24 +48,44 @@ function renderJsonList(dateObj) {
   if (jsonList) jsonList.textContent = lines.join('\n') || '(no meals)'
 }
 
+// compatibility wrapper the UI expects
+function updateJsonList() {
+  renderJsonList(new Date())
+}
+
+// ensure the JSON open/close handlers exist exactly as requested
+const btnJsonEl = document.getElementById('btnJson')
+if (btnJsonEl) btnJsonEl.addEventListener('click', () => {
+  const modal = document.getElementById('jsonModal')
+  if (modal) modal.style.display = 'block'
+  updateJsonList()
+})
+const btnCloseJsonEl = document.getElementById('btnCloseJson')
+if (btnCloseJsonEl) btnCloseJsonEl.addEventListener('click', () => {
+  const modal = document.getElementById('jsonModal')
+  if (modal) modal.style.display = 'none'
+})
+
 // Export TXT by selected date
 if (btnExportTxt) btnExportTxt.addEventListener('click', () => {
-  const dateInput = document.getElementById('exportDate')
-  let d = dateInput && dateInput.value ? new Date(dateInput.value) : new Date()
-  // normalize to midnight
-  d.setHours(0,0,0,0)
-  const meals = loadMealsLog().filter(m => m.timestamp && sameLocalDate(new Date(m.timestamp), d))
-  const lines = meals.map(m => `${formatTimeHHmm(m.timestamp)} ${m.name || m.foodName || ''} ${m.grams||''} g`)
-  const txt = lines.join('\n')
-  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `meals-${d.toISOString().slice(0,10)}.txt`
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
+  const targetDate = document.getElementById('exportDate')?.value
+  const mealsLog = loadMealsLog()
+  const dateToMatch = targetDate || new Date().toISOString().split('T')[0]
+  const filtered = mealsLog.filter(m => m.timestamp && new Date(m.timestamp).toISOString().split('T')[0] === dateToMatch)
+
+  let output = filtered.map(m => {
+    const time = new Date(m.timestamp).toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit' })
+    return `${time} ${m.name || m.foodName || ''} ${m.grams || ''} g`
+  }).join('\n')
+
+  const blob = new Blob([output], { type: 'text/plain' })
+  const anchor = document.createElement('a')
+  anchor.download = `meals_${dateToMatch}.txt`
+  anchor.href = window.URL.createObjectURL(blob)
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.URL.revokeObjectURL(anchor.href)
 })
 
 // JSON import handler
@@ -108,18 +128,6 @@ if (jsonFileInput) jsonFileInput.addEventListener('change', (ev) => {
   }
   reader.readAsText(f)
 })
-      const fStart = startMs
-      const fEnd = fStart + fDurMs
-      if (now2 >= fStart && now2 <= fEnd) influxF += (ABSORPTION_GPH.fats/60)
-    }
-  })
-
-  const influxLine = `Blood Influx — carbs: ${influxC.toFixed(2)} g/min | protein: ${influxP.toFixed(2)} g/min | fats: ${influxF.toFixed(2)} g/min`
-  el.textContent = lines.join('\n') + '\n\n' + influxLine
-  // Also update the bottom Blood Influx UI if present
-  const tvBI = document.getElementById('tvBloodInflux')
-  if (tvBI) tvBI.textContent = `Blood Influx: ${influxC.toFixed(2)} g/min`
-}
 
 // Metabolic engine loop: absorbs from meals into glycogen and handles spillover
 function metabolicLoop() {
