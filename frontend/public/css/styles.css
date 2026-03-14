@@ -1,5 +1,22 @@
 body{font-family:Arial,Helvetica,sans-serif;margin:16px}
 header h1{margin:0 0 12px}
+/* Dark mode base */
+body.dark { background:#121212; color:#e6eef8 }
+
+.header-row{display:flex;align-items:center;gap:12px}
+#logo{height:40px}
+.small{padding:4px 8px;font-size:13px}
+
+/* Step progress */
+.step-progress{width:220px;height:10px;background:#e6f0ff;border-radius:6px;overflow:hidden;margin-top:6px}
+.step-bar{height:100%;width:40%;background:#0078d4}
+
+/* Light log panel */
+#logPanel, #log { background:#F0F7FF }
+
+/* Inline error messages */
+.error-text{color:#b42323;font-size:12px;margin-top:2px;display:none}
+.error-text[aria-live]{min-height:16px}
 form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 input{padding:6px;border:1px solid #ccc;border-radius:4px}
 button{padding:6px 10px}

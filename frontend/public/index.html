@@ -8,10 +8,14 @@
 </head>
 <body>
   <header>
-    <h1>Biocore — Калкулатор на калории</h1>
+      <div class="header-row">
+         <img src="/public/images/logo.png" alt="Biocore logo" id="logo" onerror="this.style.display='none'" />
+         <h1>Biocore — Калкулатор на калории</h1>
+         <button id="btnReload" class="small">SYNC</button>
+      </div>
   </header>
   <main>
-    <form id="foodForm">
+      <form id="foodForm">
       <input id="name" placeholder="Храна" required />
       <input id="grams" type="number" placeholder="Грама" required />
       <input id="calPer100" type="number" placeholder="Кал/100г" required />
@@ -29,8 +33,7 @@
   </main>
   <script src="js/app.js"></script>
 </body>
-</html>
-Yes, you can definitely create a web application that calculates calories and nutrients using JavaScript, HTML, and CSS. You can also incorporate Kotlin for specific functionalities, especially if you want to leverage Kotlin's features or if you're using Kotlin/JS for the frontend. Here’s a general outline of how you can approach this project:
+         <section id="metabolicPanel" style="margin-bottom:12px;padding:10px;border:1px solid #ddd;border-radius:6px;">
 
 ### 1. **Define the Requirements**
    - Determine the features you want in your application (e.g., user input for food items, calculation of total calories and nutrients, saving user data, etc.).
@@ -39,6 +42,30 @@ Yes, you can definitely create a web application that calculates calories and nu
 ### 2. **Set Up Your Development Environment**
    - Choose a code editor (like Visual Studio Code, IntelliJ IDEA, etc.).
    - Set up a local server for testing (you can use tools like Live Server for VS Code or a simple Node.js server).
+
+         <section id="quickActions" style="margin-bottom:12px;display:flex;gap:8px;align-items:center;">
+            <button id="btnEditKcal" class="small">Edit KCAL</button>
+            <button id="btnEditHR" class="small">Edit HR</button>
+            <button id="btnEditFood" class="small">Edit Food</button>
+         </section>
+
+         <section id="stepPanel" style="margin-bottom:12px;padding:10px;border-radius:6px;background:#F0F7FF;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+               <div>
+                  <div id="tvStepCount">Стъпки: 0</div>
+                  <div class="step-progress" aria-hidden="true"><div id="stepBar" class="step-bar"></div></div>
+               </div>
+               <div id="tvMetabolicStatus">Метаболичен статус: -</div>
+            </div>
+         </section>
+
+         <section id="nutritionStatus" style="margin-bottom:12px;padding:10px;border:1px solid #ddd;border-radius:6px;">
+            <div id="tvFineNutritionStatus" style="font-family:monospace;">Nutrition: -</div>
+         </section>
+
+         <section id="logPanel" style="margin-bottom:12px;padding:10px;border-radius:6px;background:#F0F7FF;">
+            <div id="log" style="font-size:13px;color:#073e6b;">Log panel</div>
+         </section>
 
 ### 3. **Frontend Development**
    - **HTML**: Create the structure of your web application. This includes forms for user input, buttons for actions, and sections to display results.
