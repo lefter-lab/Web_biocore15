@@ -17,12 +17,26 @@ window.Calc = (function(){
     return gender === 'male' ? bmr + 5 : bmr - 161
   }
 
-  function calculateMinuteBurn(hr, bmr, activeKcalDay) {
+  function calculateMinuteBurn(hr, bmr, activeKcalDay, mode = 'Maintenance') {
     const totalKcalMin = (bmr + (activeKcalDay||0)) / 1440
+    // Base carb fraction by HR zones
     let carbsPct = 0.5
     if (hr > 150) carbsPct = 0.9
     else if (hr > 120) carbsPct = 0.7
     else if (hr < 75) carbsPct = 0.3
+
+    // Mode adjustments
+    const modeAdjust = {
+      'Fat Burn': -0.15,
+      'Muscle Build': 0.10,
+      'Maintenance': 0.0,
+      'Brain Power': 0.12,
+      'Deep Recovery': -0.05
+    }
+    const adj = modeAdjust[mode] || 0
+    carbsPct = Math.max(0, Math.min(1, carbsPct + adj))
+
+    // Return grams of carbohydrate burned per minute (kcal->g: divide by 4)
     return (totalKcalMin * carbsPct) / 4
   }
 

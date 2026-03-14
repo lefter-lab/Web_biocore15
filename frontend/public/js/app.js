@@ -163,13 +163,31 @@ function metabolicLoop() {
   const gender = localStorage.getItem('biocore_gender') || 'male'
   const activeKcalDay = Number(localStorage.getItem('biocore_active_kcal') || 0)
   const bmr = window.Calc ? window.Calc.calculateBMR(weight, height, age, gender) : 0
-  const burnGPerMin = window.Calc ? window.Calc.calculateMinuteBurn(hr, bmr, activeKcalDay) : 0
+  // read selected metabolic mode
+  const selectMode = document.getElementById('metabolicMode')
+  const mode = localStorage.getItem('biocore_mode') || (selectMode ? selectMode.value : 'Maintenance')
+  const burnGPerMin = window.Calc ? window.Calc.calculateMinuteBurn(hr, bmr, activeKcalDay, mode) : 0
 
   // Update metabolic UI
   const tv = document.getElementById('tvMetabolicStatus')
   if (tv) {
     const status = (result.influxRateGPerMin.carbs > burnGPerMin) ? 'STORING ENERGY' : 'BURNING FAT'
-    tv.innerHTML = `Glycogen: ${glyc.toFixed(1)}g<br>Blood Influx: ${result.influxRateGPerMin.carbs.toFixed(2)} g/min<br>Status: ${status}<br>BMR: ${Math.round(bmr)} kcal`
+    // protein influx in g/hour
+    const proteinGPerHour = (result.influxRateGPerMin.protein || 0) * 60
+    let extra = ''
+    tv.style.color = ''
+    // Fat Burn: warn if protein supply is low (<10 g/h)
+    if (mode === 'Fat Burn' && proteinGPerHour < 10) {
+      extra = `<div style="color:#ff4444;font-weight:700">Muscle Wasting Risk!</div>`
+      tv.style.color = '#ff4444'
+    }
+    // Muscle Build: anabolic window detection
+    if (mode === 'Muscle Build' && result.influxRateGPerMin.carbs > 0 && result.influxRateGPerMin.protein > 0) {
+      extra = `<div style="color:#7CFC00;font-weight:700">Anabolic Window ACTIVE</div>`
+      tv.style.color = '#7CFC00'
+    }
+
+    tv.innerHTML = `Mode: ${mode}<br>Glycogen: ${glyc.toFixed(1)}g<br>Blood Influx: ${result.influxRateGPerMin.carbs.toFixed(2)} g/min<br>Status: ${status}<br>BMR: ${Math.round(bmr)} kcal${extra}`
   }
 
   // Update top cards
@@ -201,6 +219,19 @@ function metabolicLoop() {
 setInterval(metabolicLoop, 5000)
 // Run once on load
 metabolicLoop()
+
+// metabolicMode select handler: persist and trigger update
+const metabolicSelect = document.getElementById('metabolicMode')
+if (metabolicSelect) {
+  // initialize from stored
+  const stored = localStorage.getItem('biocore_mode')
+  if (stored) metabolicSelect.value = stored
+  metabolicSelect.addEventListener('change', (e) => {
+    const v = e.target.value
+    localStorage.setItem('biocore_mode', v)
+    metabolicLoop()
+  })
+}
 
 // Return human-friendly relative time string (BG)
 function getRelativeTime(timestamp) {
