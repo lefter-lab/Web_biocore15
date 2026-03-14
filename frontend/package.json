@@ -2,17 +2,14 @@
   "name": "biocore-frontend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "start": "npx http-server public -p 8080"
+    "start": "npx http-server public -p 8080",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
+  },
+  "devDependencies": {
+    "jest": "^29.6.1",
+    "jsdom": "^21.1.0"
   }
 }
-/calorie-calculator
-|-- /public
-|   |-- index.html
-|   |-- styles.css
-|   |-- script.js
-|-- /server (if using a backend)
-|   |-- server.js
-|-- /data
-|   |-- foodData.json (or use an API)
-|-- package.json (if using Node.js)

@@ -15,6 +15,8 @@ function calcCalories(grams, calPer100) {
 
 function render() {
   const items = load()
+  // sort newest first by timestamp
+  items.sort((a,b) => (b.timestamp||0) - (a.timestamp||0))
   const tbody = $('#list tbody')
   tbody.innerHTML = ''
   let total = 0
@@ -22,20 +24,43 @@ function render() {
     const tr = document.createElement('tr')
     const cal = calcCalories(it.grams, it.calPer100)
     total += cal
-    tr.innerHTML = `<td>${it.name}</td><td>${it.grams}</td><td>${cal}</td><td><button data-idx="${idx}">X</button></td>`
+    const timeText = it.timestamp ? new Date(it.timestamp).toLocaleString() : ''
+    tr.innerHTML = `<td>${timeText}</td><td>${it.name}</td><td>${it.grams}</td><td>${cal}</td><td><button data-idx="${idx}" class="delete">X</button> <button data-edit="${idx}" class="edit">Edit</button></td>`
     tbody.appendChild(tr)
   })
   $('#total').textContent = total
+  // also update metabolic panel default active kcal (use total as rough proxy)
+  if (document.getElementById('inputActive')) {
+    document.getElementById('inputActive').value = total
+  }
 }
 
 document.addEventListener('click', (e) => {
-  const btn = e.target.closest('button[data-idx]')
-  if (!btn) return
-  const idx = Number(btn.dataset.idx)
-  const items = load()
-  items.splice(idx, 1)
-  save(items)
-  render()
+  const del = e.target.closest('button.delete')
+  if (del) {
+    const idx = Number(del.dataset.idx)
+    const items = load()
+    items.splice(idx, 1)
+    save(items)
+    render()
+    return
+  }
+
+  const edit = e.target.closest('button.edit')
+  if (edit) {
+    const idx = Number(edit.dataset.edit)
+    const items = load()
+    const it = items[idx]
+    if (!it) return
+    // populate form for editing
+    $('#name').value = it.name
+    $('#grams').value = it.grams
+    $('#calPer100').value = it.calPer100
+    // mark editing index
+    window._editingIndex = idx
+    $('#foodForm button[type=submit]').textContent = 'Запази'
+    return
+  }
 })
 
 document.getElementById('foodForm').addEventListener('submit', (e) => {
@@ -43,12 +68,60 @@ document.getElementById('foodForm').addEventListener('submit', (e) => {
   const name = $('#name').value.trim()
   const grams = Number($('#grams').value) || 0
   const calPer100 = Number($('#calPer100').value) || 0
-  if (!name || grams <= 0) return
+  // Clear previous inline errors
+  function showError(id, msg) {
+    const el = document.getElementById(id)
+    if (!el) return
+    if (msg) {
+      el.style.display = 'block'
+      el.textContent = msg
+    } else {
+      el.style.display = 'none'
+      el.textContent = ''
+    }
+  }
+  showError('err-name','')
+  showError('err-grams','')
+  showError('err-cal','')
+
+  // Basic validations (inline)
+  if (!name) { showError('err-name','Име на храната е задължително'); return }
+  if (name.length > 100) { showError('err-name','Името е твърде дълго (макс 100 символа)'); return }
+  if (!(Number.isFinite(grams)) || grams <= 0) { showError('err-grams','Грамажът трябва да е число > 0'); return }
+  if (grams > 100000) { showError('err-grams','Грамажът е нереално голям'); return }
+  if (!(Number.isFinite(calPer100)) || calPer100 < 0) { showError('err-cal','Кал/100г трябва да бъде >= 0'); return }
+  if (calPer100 > 20000) { showError('err-cal','Кал/100г е нереално голямо'); return }
   const items = load()
-  items.push({ name, grams, calPer100 })
+  if (typeof window._editingIndex === 'number') {
+    // update existing
+    const existing = items[window._editingIndex]
+    items[window._editingIndex] = { name, grams, calPer100, timestamp: existing ? existing.timestamp : Date.now() }
+    delete window._editingIndex
+    $('#foodForm button[type=submit]').textContent = 'Добави'
+  } else {
+    items.push({ name, grams, calPer100, timestamp: Date.now() })
+  }
   save(items)
   render()
   e.target.reset()
 })
 
 render()
+
+// Compute metabolic split when user clicks Compute
+const btnCompute = document.getElementById('btnCompute')
+if (btnCompute) {
+  btnCompute.addEventListener('click', (e) => {
+    e.preventDefault()
+    const hr = Number(document.getElementById('inputHR').value) || 75
+    const activeK = Number(document.getElementById('inputActive').value) || 0
+    // Use calc helper attached to window
+    if (window.calc && typeof window.calc.calculateMetabolicSplit === 'function') {
+      const res = window.calc.calculateMetabolicSplit({ activeCalories: activeK, currentHR: hr })
+      const out = document.getElementById('metabolicOutput')
+      out.textContent = `Active: ${res.activeCalories} kcal\nCarbs: ${res.carbsKcal.toFixed(0)} kcal (${res.carbsGrams.toFixed(0)} g)\nFats: ${res.fatsKcal.toFixed(0)} kcal (${res.fatsGrams.toFixed(0)} g)\nProtein: ${res.proteinKcal.toFixed(0)} kcal (${res.proteinGrams.toFixed(0)} g)\n${res.catabolicWarning?res.catabolicWarning:''}`
+    } else {
+      alert('calc helper not loaded')
+    }
+  })
+}
