@@ -11,12 +11,21 @@
     <h1>Biocore — Калкулатор на калории</h1>
   </header>
   <main>
-    <form id="foodForm">
-      <input id="name" placeholder="Храна" required />
-      <input id="grams" type="number" placeholder="Грама" required />
-      <input id="calPer100" type="number" placeholder="Кал/100г" required />
-      <button type="submit">Добави</button>
-    </form>
+      <form id="foodForm">
+         <div style="display:flex;flex-direction:column;gap:6px;min-width:250px;">
+            <input id="name" placeholder="Храна" />
+            <span class="error-text" id="err-name" aria-live="polite" style="display:none"></span>
+         </div>
+         <div style="display:flex;flex-direction:column;gap:6px;min-width:120px;">
+            <input id="grams" type="number" placeholder="Грама" />
+            <span class="error-text" id="err-grams" aria-live="polite" style="display:none"></span>
+         </div>
+         <div style="display:flex;flex-direction:column;gap:6px;min-width:140px;">
+            <input id="calPer100" type="number" placeholder="Кал/100г" />
+            <span class="error-text" id="err-cal" aria-live="polite" style="display:none"></span>
+         </div>
+         <button type="submit">Добави</button>
+      </form>
 
       <section id="metabolicPanel" style="margin-bottom:12px;padding:10px;border:1px solid #ddd;border-radius:6px;">
          <h3>Metabolic Split (test)</h3>

@@ -6,3 +6,7 @@ button{padding:6px 10px}
 table{width:100%;border-collapse:collapse;margin-bottom:12px}
 th,td{border:1px solid #eee;padding:6px;text-align:left}
 #totals{font-weight:bold}
+
+/* Inline error messages */
+.error-text{color:#b42323;font-size:12px;margin-top:2px;display:none}
+.error-text[aria-live]{min-height:16px}

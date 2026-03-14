@@ -68,13 +68,29 @@ document.getElementById('foodForm').addEventListener('submit', (e) => {
   const name = $('#name').value.trim()
   const grams = Number($('#grams').value) || 0
   const calPer100 = Number($('#calPer100').value) || 0
-  // Basic validations
-  if (!name) { alert('Име на храната е задължително'); return }
-  if (name.length > 100) { alert('Името е твърде дълго (макс 100 символа)'); return }
-  if (!(Number.isFinite(grams)) || grams <= 0) { alert('Грамажът трябва да е число > 0'); return }
-  if (grams > 100000) { alert('Грамажът е нереално голям'); return }
-  if (!(Number.isFinite(calPer100)) || calPer100 < 0) { alert('Кал/100г трябва да бъде >= 0'); return }
-  if (calPer100 > 20000) { alert('Кал/100г е нереално голямо'); return }
+  // Clear previous inline errors
+  function showError(id, msg) {
+    const el = document.getElementById(id)
+    if (!el) return
+    if (msg) {
+      el.style.display = 'block'
+      el.textContent = msg
+    } else {
+      el.style.display = 'none'
+      el.textContent = ''
+    }
+  }
+  showError('err-name','')
+  showError('err-grams','')
+  showError('err-cal','')
+
+  // Basic validations (inline)
+  if (!name) { showError('err-name','Име на храната е задължително'); return }
+  if (name.length > 100) { showError('err-name','Името е твърде дълго (макс 100 символа)'); return }
+  if (!(Number.isFinite(grams)) || grams <= 0) { showError('err-grams','Грамажът трябва да е число > 0'); return }
+  if (grams > 100000) { showError('err-grams','Грамажът е нереално голям'); return }
+  if (!(Number.isFinite(calPer100)) || calPer100 < 0) { showError('err-cal','Кал/100г трябва да бъде >= 0'); return }
+  if (calPer100 > 20000) { showError('err-cal','Кал/100г е нереално голямо'); return }
   const items = load()
   if (typeof window._editingIndex === 'number') {
     // update existing
