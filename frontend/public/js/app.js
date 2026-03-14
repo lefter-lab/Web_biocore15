@@ -13,6 +13,54 @@ function calcCalories(grams, calPer100) {
   return Math.round((grams * calPer100) / 100)
 }
 
+// Absorption rates mirror frontend/src/js/calc.js (g/min)
+const ABSORPTION_RATES = { fastCarbs: 1.0, slowCarbs: 0.33, proteins: 0.25, fats: 0.08 }
+
+function loadMealsLog() {
+  const raw = localStorage.getItem('mealsLog')
+  return raw ? JSON.parse(raw) : []
+}
+
+function saveMealsLog(list) { localStorage.setItem('mealsLog', JSON.stringify(list)) }
+
+function formatMinutesToHours(mins) {
+  if (!Number.isFinite(mins) || mins === Infinity) return '∞'
+  const h = Math.floor(mins / 60)
+  const m = Math.round(mins % 60)
+  if (h === 0) return `${m} мин.`
+  return `${h} ч. ${m} мин.`
+}
+
+function updateFineNutritionLog() {
+  const meals = loadMealsLog()
+  const el = document.getElementById('tvFineNutritionStatus')
+  if (!el) return
+  // Build monospace log: each line "[time] name — X kcal — carbs Y g"
+  const lines = meals.slice().reverse().map(m => {
+    const time = new Date(m.timestamp).toLocaleTimeString()
+    const kcal = Math.round((m.grams * m.calPer100) / 100)
+    const carbs = m.carbsGrams != null ? m.carbsGrams : Math.round((kcal * 0.5) / 4)
+    return `${time} | ${m.name} | ${kcal} kcal | carbs ${carbs} g`
+  })
+
+  // Compute Time to Empty (approx): glycogen / (burn - absorption)
+  const glycogen = Number(localStorage.getItem('biocore_glycogen') || 300)
+  const hr = Number(localStorage.getItem('biocore_hr') || 75)
+  const active = Number(localStorage.getItem('biocore_active_kcal') || 0)
+  const bmr = Number(localStorage.getItem('biocore_bmr') || 1500)
+  const burnGPerMin = calculateMinuteBurnLocal(hr, bmr, active)
+  const absorptionPerMin = meals.length * ABSORPTION_RATES.slowCarbs
+  let timeToEmptyText = ''
+  const net = burnGPerMin - absorptionPerMin
+  if (net <= 0) timeToEmptyText = 'Time to Empty: replenishing (≤0 net)'
+  else {
+    const mins = glycogen / net
+    timeToEmptyText = 'Time to Empty: ' + formatMinutesToHours(mins)
+  }
+
+  el.textContent = lines.join('\n') + '\n\n' + timeToEmptyText
+}
+
 // Return human-friendly relative time string (BG)
 function getRelativeTime(timestamp) {
   if (!timestamp) return ''
@@ -63,18 +111,36 @@ document.addEventListener('click', (e) => {
   save(items)
   render()
 })
+// btnEditFood: scroll to form and focus #foodName
+const btnF = document.getElementById('btnEditFood')
+if (btnF) btnF.addEventListener('click', () => {
+  const f = document.getElementById('foodForm')
+  const name = document.getElementById('foodName')
+  if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  if (name) {
+    name.focus()
+  }
+})
 
 document.getElementById('foodForm').addEventListener('submit', (e) => {
   e.preventDefault()
-  const name = $('#name').value.trim()
+  const name = $('#foodName').value.trim()
   const grams = Number($('#grams').value) || 0
   const calPer100 = Number($('#calPer100').value) || 0
   if (!name || grams <= 0) return
   const items = load()
-  items.push({ name, grams, calPer100, timestamp: Date.now() })
+  const entry = { name, grams, calPer100, timestamp: Date.now() }
+  items.push(entry)
   save(items)
   render()
   e.target.reset()
+  // Add to meals log for fine nutrition
+  const kcal = Math.round((grams * calPer100) / 100)
+  const carbsEst = Math.round((kcal * 0.5) / 4)
+  const meals = loadMealsLog()
+  meals.push({ name, grams, calPer100, timestamp: Date.now(), kcal, carbsGrams: carbsEst })
+  saveMealsLog(meals)
+  updateFineNutritionLog()
 })
 
 render()

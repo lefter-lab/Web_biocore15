@@ -1,100 +1,62 @@
 <!doctype html>
 <html lang="bg">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Biocore Web</title>
-  <link rel="stylesheet" href="css/styles.css" />
-</head>
+   <meta charset="utf-8" />
+   <meta name="viewport" content="width=device-width,initial-scale=1" />
+   <title>Biocore Web</title>
+   <link rel="stylesheet" href="css/styles.css" />
+ </head>
 <body>
-  <header>
+   <header>
       <div class="header-row">
-         <img src="/public/images/logo.png" alt="Biocore logo" id="logo" onerror="this.style.display='none'" />
+         <img src="images/logo.png" alt="Biocore logo" id="logo" onerror="this.style.display='none'" />
          <h1>Biocore — Калкулатор на калории</h1>
          <button id="btnReload" class="small">SYNC</button>
       </div>
-  </header>
-  <main>
+   </header>
+   <main>
       <form id="foodForm">
-      <input id="name" placeholder="Храна" required />
-      <input id="grams" type="number" placeholder="Грама" required />
-      <input id="calPer100" type="number" placeholder="Кал/100г" required />
-      <button type="submit">Добави</button>
-    </form>
+         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="foodName" placeholder="Храна" required />
+            <input id="grams" type="number" placeholder="Грама" required />
+            <input id="calPer100" type="number" placeholder="Кал/100г" required />
+            <button type="submit">Добави</button>
+         </div>
+      </form>
 
-    <table id="list">
-      <thead>
-        <tr><th>Храна</th><th>г</th><th>кал</th><th></th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+      <section id="quickActions" style="margin-bottom:12px;display:flex;gap:8px;align-items:center;">
+         <button id="btnEditKcal" class="small">Edit KCAL</button>
+         <button id="btnEditHR" class="small">Edit HR</button>
+         <button id="btnEditFood" class="small">Edit Food</button>
+      </section>
 
-    <div id="totals">Общо калории: <span id="total">0</span></div>
-  </main>
-  <script src="js/app.js"></script>
-</body>
-         <section id="metabolicPanel" style="margin-bottom:12px;padding:10px;border:1px solid #ddd;border-radius:6px;">
-
-### 1. **Define the Requirements**
-   - Determine the features you want in your application (e.g., user input for food items, calculation of total calories and nutrients, saving user data, etc.).
-   - Decide if you want to include a database for storing user data or food items.
-
-### 2. **Set Up Your Development Environment**
-   - Choose a code editor (like Visual Studio Code, IntelliJ IDEA, etc.).
-   - Set up a local server for testing (you can use tools like Live Server for VS Code or a simple Node.js server).
-
-         <section id="quickActions" style="margin-bottom:12px;display:flex;gap:8px;align-items:center;">
-            <button id="btnEditKcal" class="small">Edit KCAL</button>
-            <button id="btnEditHR" class="small">Edit HR</button>
-            <button id="btnEditFood" class="small">Edit Food</button>
-         </section>
-
-         <section id="stepPanel" style="margin-bottom:12px;padding:10px;border-radius:6px;background:#F0F7FF;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-               <div>
-                  <div id="tvStepCount">Стъпки: 0</div>
-                  <div class="step-progress" aria-hidden="true"><div id="stepBar" class="step-bar"></div></div>
-               </div>
-               <div id="tvMetabolicStatus">Метаболичен статус: -</div>
+      <section id="stepPanel" style="margin-bottom:12px;padding:10px;border-radius:6px;background:#F0F7FF;">
+         <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+               <div id="tvStepCount">Стъпки: 0</div>
+               <div class="step-progress" aria-hidden="true"><div id="stepBar" class="step-bar"></div></div>
             </div>
-         </section>
+            <div id="tvMetabolicStatus">Метаболичен статус: -</div>
+         </div>
+      </section>
 
-         <section id="nutritionStatus" style="margin-bottom:12px;padding:10px;border:1px solid #ddd;border-radius:6px;">
-            <div id="tvFineNutritionStatus" style="font-family:monospace;">Nutrition: -</div>
-         </section>
+      <section id="nutritionStatus" style="margin-bottom:12px;padding:10px;border:1px solid #ddd;border-radius:6px;">
+         <div id="tvFineNutritionStatus" style="font-family:monospace;white-space:pre-wrap;">Nutrition log will appear here</div>
+      </section>
 
-         <section id="logPanel" style="margin-bottom:12px;padding:10px;border-radius:6px;background:#F0F7FF;">
-            <div id="log" style="font-size:13px;color:#073e6b;">Log panel</div>
-         </section>
+      <section id="logPanel" style="margin-bottom:12px;padding:10px;border-radius:6px;background:#F0F7FF;">
+         <div id="log" style="font-size:13px;color:#073e6b;">Log panel</div>
+      </section>
 
-### 3. **Frontend Development**
-   - **HTML**: Create the structure of your web application. This includes forms for user input, buttons for actions, and sections to display results.
-   - **CSS**: Style your application to make it visually appealing. You can use frameworks like Bootstrap or Tailwind CSS for responsive design.
-   - **JavaScript**: Implement the logic for calculating calories and nutrients. You can use JavaScript to handle user input, perform calculations, and update the UI dynamically.
+      <table id="list">
+         <thead>
+            <tr><th>Време</th><th>Храна</th><th>г</th><th>кал</th><th></th></tr>
+         </thead>
+         <tbody></tbody>
+      </table>
 
-### 4. **Backend Development (Optional)**
-   - If you need to store data or perform more complex calculations, consider setting up a backend using Node.js, Express, or any other server-side technology.
-   - You can also use Kotlin for the backend if you prefer, using frameworks like Ktor or Spring Boot.
-
-### 5. **Using Kotlin**
-   - If you want to use Kotlin in your web application, you can use Kotlin/JS to write your frontend code. This allows you to write Kotlin code that compiles to JavaScript.
-   - You can also use Kotlin for backend development if you choose to implement a server-side component.
-
-### 6. **Deployment**
-   - For local deployment, you can simply run your application on a local server.
-   - For server deployment, you can use platforms like Heroku, Vercel, or DigitalOcean to host your application.
-
-### 7. **Testing and Optimization**
-   - Test your application thoroughly to ensure all calculations are accurate and the user interface is intuitive.
-   - Optimize the performance and ensure that the application is responsive across different devices.
-
-### 8. **Documentation**
-   - Document your code and create user guides if necessary to help users understand how to use your application.
-
-### Example Technologies
-- **Frontend**: HTML, CSS, JavaScript (or Kotlin/JS)
-- **Backend**: Node.js, Express, or Kotlin with Ktor/Spring Boot
-- **Database**: MongoDB, PostgreSQL, or any other database if needed
-
-### Conclusion
-Creating a web application for calculating calories and nutrients is entirely feasible with the technologies you've mentioned. By leveraging JavaScript for the frontend and potentially Kotlin for specific functionalities, you can build a robust application that meets your needs.
+      <div id="totals">Общо калории: <span id="total">0</span></div>
+   </main>
+   <script src="js/app.js"></script>
+</body>
+</html>
