@@ -46,7 +46,7 @@ function getLimitSeries() {
   return Array(chartHistory.labels.length).fill(CHART_LIMIT_LINE)
 }
 
-export function render() {
+export function render(onMealSelect) {
   const items = load()
   items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
   const tbody = document.querySelector('#list tbody')
@@ -60,6 +60,12 @@ export function render() {
     const ts = it.timestamp || 0
     const timeText = ts ? getRelativeTime(ts) : ''
     tr.innerHTML = `<td data-ts="${ts}">${timeText}</td><td>${it.name}</td><td>${it.grams}</td><td>${cal}</td><td><button data-idx="${idx}">X</button></td>`
+    if (typeof onMealSelect === 'function') {
+      tr.addEventListener('click', (evt) => {
+        if (evt.target.closest('button')) return
+        onMealSelect(it, idx)
+      })
+    }
     tbody.appendChild(tr)
   })
   const totalEl = document.getElementById('total')

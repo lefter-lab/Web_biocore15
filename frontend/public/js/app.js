@@ -35,6 +35,8 @@ const btnCloseJson = document.getElementById('btnCloseJson')
 
 let metabolicTimer = null
 let isSynced = false
+let editingIndex = null
+let editingTimestamp = null
 
 function $(selector) {
   return document.querySelector(selector)
@@ -50,6 +52,53 @@ function renderJsonList(dateObj) {
 
 function sameLocalDate(d1, d2) {
   return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate()
+}
+
+function getFoodFormButton() {
+  return document.querySelector('#foodForm button[type="submit"]')
+}
+
+function setFormButtonText(text) {
+  const btn = getFoodFormButton()
+  if (btn) btn.textContent = text
+}
+
+function resetEditingState(formElement) {
+  editingIndex = null
+  editingTimestamp = null
+  setFormButtonText('Добави')
+  if (formElement) formElement.reset()
+}
+
+function handleMealSelect(meal, idx) {
+  if (!meal) return
+  editingIndex = idx
+  editingTimestamp = Number(meal.timestamp) || Date.now()
+  const mealsLog = loadMealsLog()
+  const logEntry = mealsLog.find((entry) => entry.timestamp === editingTimestamp)
+  const form = document.getElementById('foodForm')
+  const fields = {
+    foodName: meal.name,
+    grams: meal.grams,
+    calPer100: meal.calPer100,
+    fastCarbs: logEntry?.fastCarbs,
+    slowCarbs: logEntry?.slowCarbs,
+    proteins: logEntry?.proteins,
+    fats: logEntry?.fats
+  }
+  Object.entries(fields).forEach(([key, value]) => {
+    const input = document.getElementById(key)
+    if (input) input.value = value ?? ''
+  })
+  setFormButtonText('Обнови Запис')
+  if (form) {
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    document.getElementById('foodName')?.focus()
+  }
+}
+
+function rerenderMeals() {
+  render(handleMealSelect)
 }
 
 function openJsonModal() {
@@ -115,7 +164,7 @@ function handleJsonImport(ev) {
         const tableItems = load()
         tableItems.push(...importedItems)
         save(tableItems)
-        render()
+        rerenderMeals()
         renderFineLog()
         renderJsonList(new Date())
       }
@@ -160,27 +209,41 @@ function handleFormSubmit(ev) {
   const prot = Number($('#proteins')?.value) || 0
   const fat = Number($('#fats')?.value) || 0
   if (!name || grams <= 0) return
-  const timestamp = Date.now()
+  const isEditing = editingIndex !== null
+  const timestamp = isEditing ? (editingTimestamp || Date.now()) : Date.now()
   const items = load()
-  items.push({ name, grams, calPer100, timestamp })
+  const entry = { name, grams, calPer100, timestamp }
+  if (isEditing) {
+    items[editingIndex] = entry
+  } else {
+    items.push(entry)
+  }
   save(items)
   const meals = loadMealsLog()
-  meals.push(
-    normalizeFineMeal({
-      name,
-      grams,
-      calPer100,
-      timestamp,
-      fastCarbs: fast,
-      slowCarbs: slow,
-      proteins: prot,
-      fats: fat
-    })
-  )
+  const normalized = normalizeFineMeal({
+    name,
+    grams,
+    calPer100,
+    timestamp,
+    fastCarbs: fast,
+    slowCarbs: slow,
+    proteins: prot,
+    fats: fat
+  })
+  if (isEditing) {
+    const logIdx = meals.findIndex((meal) => meal.timestamp === timestamp)
+    if (logIdx !== -1) {
+      meals[logIdx] = normalized
+    } else {
+      meals.push(normalized)
+    }
+  } else {
+    meals.push(normalized)
+  }
   saveMealsLog(meals)
-  render()
+  resetEditingState(ev.target)
+  rerenderMeals()
   renderFineLog()
-  ev.target.reset()
 }
 
 function handleRowDelete(ev) {
@@ -191,7 +254,8 @@ function handleRowDelete(ev) {
   const items = load()
   items.splice(idx, 1)
   save(items)
-  render()
+  resetEditingState(document.getElementById('foodForm'))
+  rerenderMeals()
   renderFineLog()
 }
 
@@ -276,7 +340,7 @@ function handleSync() {
     }
   } else {
     console.log('Reloading data...')
-    render()
+    rerenderMeals()
     renderFineLog()
     refreshMetabolicStatus()
   }
@@ -375,11 +439,12 @@ function handleNightSubmit(ev) {
 }
 
 function initApp() {
+  resetEditingState(document.getElementById('foodForm'))
   restoreChartHistory()
   attachHandlers()
   initMetabolicChart()
   initMetabolicMode()
-  render()
+  rerenderMeals()
   renderFineLog()
   startFineNutritionTicker()
   refreshMetabolicStatus()
