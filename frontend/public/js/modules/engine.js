@@ -30,8 +30,16 @@ export function metabolicLoop(modeOverride) {
   const meals = loadMealsLog()
   const now = Date.now()
   const intervalMinutes = 5
+  const delayMs = Calc?.CONFIG?.DIGESTIVE_DELAY_MINS ? Calc.CONFIG.DIGESTIVE_DELAY_MINS * 60000 : 0
+  const digestingMeals = meals.filter((meal) => {
+    const ts = Number(meal.timestamp) || 0
+    return ts > 0 && now - ts < delayMs
+  })
   const result = absorbMealsForInterval(meals, now, intervalMinutes)
   saveMealsLog(meals)
+  const remainingCarbs = meals.reduce((sum, meal) => {
+    return sum + (meal.remainingFast || 0) + (meal.remainingSlow || 0)
+  }, 0)
 
   const glycKey = 'biocore_glycogen'
   const fatKey = 'biocore_fat_from_carbs'
@@ -61,6 +69,10 @@ export function metabolicLoop(modeOverride) {
     : 0
   lastBurnRate = burnGPerMin
   lastInfluxRate = Number(result.influxRateGPerMin.carbs || 0)
+  const hasDigesting = digestingMeals.length > 0
+  const status = hasDigesting
+    ? 'Digesting'
+    : (result.influxRateGPerMin.carbs > burnGPerMin ? 'STORING ENERGY' : 'BURNING FAT')
 
   return {
     mode,
@@ -76,8 +88,10 @@ export function metabolicLoop(modeOverride) {
     bmr,
     burnGPerMin,
     absorbedCarbs,
+    digestingMeals,
+    remainingCarbs,
     timestamp: now,
-    status: result.influxRateGPerMin.carbs > burnGPerMin ? 'STORING ENERGY' : 'BURNING FAT',
+    status,
     lastBurnRate,
     lastInfluxRate
   }

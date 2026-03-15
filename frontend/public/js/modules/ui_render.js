@@ -1,5 +1,6 @@
 import { CHART_HISTORY_KEY, load, loadMealsLog } from './storage.js'
 import { chartHistory, pushMetabolicHistory, lastBurnRate, lastInfluxRate } from './engine.js'
+import { Calc } from '../calc.js'
 
 const CHART_LIMIT_LINE = 500
 const STEP_GOAL = 10000
@@ -42,6 +43,46 @@ function formatRate(value) {
   return Number(value || 0).toFixed(2)
 }
 
+function formatDurationFromMinutes(totalMinutes) {
+  const normalized = Math.max(0, Math.round(totalMinutes))
+  const hours = Math.floor(normalized / 60)
+  const minutes = normalized % 60
+  return `${hours}h:${minutes.toString().padStart(2, '0')}min`
+}
+
+function buildDurationLabel(grams, rate, label) {
+  if (!rate || !(grams > 0)) return null
+  const minsNeeded = Math.max(1, Math.ceil(grams / rate))
+  return `${label}:${formatDurationFromMinutes(minsNeeded)}`
+}
+
+function estimateFatBurnMinutes(totalFast, totalSlow, burnRate, fastRate, slowRate) {
+  if (burnRate <= 0) return 0
+  const macros = [
+    { remaining: Math.max(0, totalFast), rate: fastRate },
+    { remaining: Math.max(0, totalSlow), rate: slowRate }
+  ]
+  let currentRate = macros.reduce((sum, entry) => sum + (entry.remaining > 0 ? entry.rate : 0), 0)
+  if (currentRate < burnRate) return 0
+  let elapsed = 0
+  while (currentRate >= burnRate && macros.some((entry) => entry.remaining > 0)) {
+    const finishing = macros
+      .filter((entry) => entry.remaining > 0 && entry.rate > 0)
+      .map((entry) => entry.remaining / entry.rate)
+    if (!finishing.length) break
+    const nextFinish = Math.min(...finishing)
+    elapsed += nextFinish
+    macros.forEach((entry) => {
+      if (entry.remaining > 0 && entry.rate > 0) {
+        const consumed = Math.min(entry.remaining, entry.rate * nextFinish)
+        entry.remaining -= consumed
+      }
+    })
+    currentRate = macros.reduce((sum, entry) => sum + (entry.remaining > 0 ? entry.rate : 0), 0)
+  }
+  return Math.max(0, Math.ceil(elapsed))
+}
+
 function getLimitSeries() {
   return Array(chartHistory.labels.length).fill(CHART_LIMIT_LINE)
 }
@@ -75,6 +116,12 @@ export function render(onMealSelect) {
 export function renderFineLog() {
   const meals = loadMealsLog()
   const totals = { fast: 0, slow: 0, prot: 0, fat: 0 }
+  const fastRate = Calc?.CONFIG?.ABSORPTION_RATES?.fastCarbs || 0
+  const slowRate = Calc?.CONFIG?.ABSORPTION_RATES?.slowCarbs || 0
+  const protRate = Calc?.CONFIG?.ABSORPTION_RATES?.proteins || 0
+  const fatRate = Calc?.CONFIG?.ABSORPTION_RATES?.fats || 0
+  const digestDelayMs = (Calc?.CONFIG?.DIGESTIVE_DELAY_MINS ?? 15) * 60000
+  const now = Date.now()
   meals.forEach((meal) => {
     totals.fast += meal.remainingFast || 0
     totals.slow += meal.remainingSlow || 0
@@ -92,6 +139,23 @@ export function renderFineLog() {
       if (meal.remainingProt) macros.push(`Prot ${formatMacroValue(meal.remainingProt)}g`)
       if (meal.remainingFat) macros.push(`Fat ${formatMacroValue(meal.remainingFat)}g`)
       if (!macros.length) macros.push('complete')
+      const remainingParts = []
+      const remainingCarbs = (meal.remainingFast || 0) + (meal.remainingSlow || 0)
+      const carbRateForMeal = (meal.remainingFast ? fastRate : 0) + (meal.remainingSlow ? slowRate : 0)
+      const carbLabel = buildDurationLabel(remainingCarbs, carbRateForMeal, 'Carbo')
+      if (carbLabel) remainingParts.push(carbLabel)
+      const protLabel = buildDurationLabel(meal.remainingProt || 0, protRate, 'Prot')
+      if (protLabel) remainingParts.push(protLabel)
+      const fatLabel = buildDurationLabel(meal.remainingFat || 0, fatRate, 'Fat')
+      if (fatLabel) remainingParts.push(fatLabel)
+      if (remainingParts.length) macros.push(`Remaining to empty: ${remainingParts.join(' | ')}`)
+      if (meal.timestamp) {
+        const elapsedMs = now - Number(meal.timestamp)
+        if (elapsedMs >= 0 && elapsedMs < digestDelayMs) {
+          const minsLeft = Math.ceil((digestDelayMs - elapsedMs) / 60000)
+          macros.push(`Digesting: ${minsLeft} min left`)
+        }
+      }
       return `${time} ${meal.name}: ${macros.join(' | ')}`
     })
   const totalBloodInflux = formatRate(lastInfluxRate)
@@ -109,6 +173,8 @@ export function renderFineLog() {
     lines.push('', 'Recent meals:')
     lines.push(...recent)
   }
+  const fatBurnMinutes = estimateFatBurnMinutes(totals.fast, totals.slow, lastBurnRate, fastRate, slowRate)
+  lines.push('', `Fat burn starts in: ${fatBurnMinutes} min`)
   if (fitnessStatusNode) fitnessStatusNode.textContent = lines.join('\n')
 }
 

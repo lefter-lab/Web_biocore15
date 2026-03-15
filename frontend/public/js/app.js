@@ -208,9 +208,12 @@ function handleFormSubmit(ev) {
   const slow = Number($('#slowCarbs')?.value) || 0
   const prot = Number($('#proteins')?.value) || 0
   const fat = Number($('#fats')?.value) || 0
+  const offsetMinutes = Number($('#foodTimeOffset')?.value) || 0
   if (!name || grams <= 0) return
   const isEditing = editingIndex !== null
-  const timestamp = isEditing ? (editingTimestamp || Date.now()) : Date.now()
+  const nowStamp = Date.now()
+  const offsetMs = Math.max(0, offsetMinutes) * 60000
+  const timestamp = Math.max(0, nowStamp - offsetMs)
   const items = load()
   const entry = { name, grams, calPer100, timestamp }
   if (isEditing) {
@@ -230,13 +233,12 @@ function handleFormSubmit(ev) {
     proteins: prot,
     fats: fat
   })
-  if (isEditing) {
-    const logIdx = meals.findIndex((meal) => meal.timestamp === timestamp)
-    if (logIdx !== -1) {
-      meals[logIdx] = normalized
-    } else {
-      meals.push(normalized)
-    }
+  const targetTimestamp = isEditing ? editingTimestamp : timestamp
+  const logIdx = targetTimestamp
+    ? meals.findIndex((meal) => meal.timestamp === targetTimestamp)
+    : -1
+  if (logIdx !== -1) {
+    meals[logIdx] = normalized
   } else {
     meals.push(normalized)
   }
