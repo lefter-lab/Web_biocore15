@@ -5,6 +5,9 @@ const MEALS_LOG_KEY = 'biocore_meals_log'
 const FINE_LOG_INTERVAL_MS = 5000
 const METABOLIC_INTERVAL_MS = 5000
 const MAX_CHART_POINTS = 24
+const CHART_LIMIT_LINE = 500
+const CHART_HISTORY_KEY = 'biocore_chart_history'
+const CHART_HISTORY_SAVE_INTERVAL_MS = 60000
 
 const jsonModal = document.getElementById('jsonModal')
 const jsonList = document.getElementById('jsonList')
@@ -19,6 +22,8 @@ let metabolicTimer = null
 let metabolicChartInstance = null
 const chartHistory = { labels: [], glycogen: [], influx: [] }
 let isSynced = false
+let lastInfluxRate = 0
+let lastBurnRate = 0
 
 function $(selector) {
   return document.querySelector(selector)
@@ -207,8 +212,48 @@ function formatMacroValue(value) {
   return Math.round((value || 0) * 10) / 10
 }
 
-function updateFineNutritionLog() {
-  if (!fitnessStatusNode) return
+function formatRate(value) {
+  return Number(value || 0).toFixed(2)
+}
+
+function loadChartHistoryStore() {
+  const raw = localStorage.getItem(CHART_HISTORY_KEY)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch (err) {
+    console.warn('Biocore: invalid chart history payload', err)
+    return null
+  }
+}
+
+function restoreChartHistory() {
+  const stored = loadChartHistoryStore()
+  if (!stored) return
+  const storedLabels = Array.isArray(stored.labels) ? stored.labels : []
+  const storedGlycogen = Array.isArray(stored.glycogen) ? stored.glycogen : []
+  const storedInflux = Array.isArray(stored.influx) ? stored.influx : []
+  const actualSize = Math.min(MAX_CHART_POINTS, storedLabels.length, storedGlycogen.length, storedInflux.length)
+  if (actualSize <= 0) return
+  chartHistory.labels = storedLabels.slice(-actualSize)
+  chartHistory.glycogen = storedGlycogen.slice(-actualSize)
+  chartHistory.influx = storedInflux.slice(-actualSize)
+}
+
+function saveChartHistory() {
+  localStorage.setItem(CHART_HISTORY_KEY, JSON.stringify({
+    labels: chartHistory.labels,
+    glycogen: chartHistory.glycogen,
+    influx: chartHistory.influx
+  }))
+}
+
+function getLimitSeries() {
+  return Array(chartHistory.labels.length).fill(CHART_LIMIT_LINE)
+}
+
+        },
+        {
   const meals = loadMealsLog()
   const totals = { fast: 0, slow: 0, prot: 0, fat: 0 }
   meals.forEach((meal) => {
@@ -230,10 +275,15 @@ function updateFineNutritionLog() {
       if (!macros.length) macros.push('complete')
       return `${time} ${meal.name}: ${macros.join(' | ')}`
     })
+  const totalBloodInflux = formatRate(lastInfluxRate)
+  const netChange = lastInfluxRate - lastBurnRate
+  const netLabel = `${netChange >= 0 ? '+' : '-'}${Math.abs(netChange).toFixed(2)}`
   const summary = [
     `Entries ${meals.length}`,
     `Remaining carbs: Fast ${formatMacroValue(totals.fast)}g / Slow ${formatMacroValue(totals.slow)}g`,
-    `Protein ${formatMacroValue(totals.prot)}g • Fat ${formatMacroValue(totals.fat)}g`
+    `Protein ${formatMacroValue(totals.prot)}g • Fat ${formatMacroValue(totals.fat)}g`,
+    `TOTAL BLOOD INFLUX: ${totalBloodInflux} g/min`,
+    `NET GLYCOGEN CHANGE: ${netLabel} g/min (разликата между Influx и Burn)`
   ]
   const lines = [...summary]
   if (recent.length) {
@@ -270,6 +320,17 @@ function initMetabolicChart() {
           data: [...chartHistory.influx],
           yAxisID: 'influxAxis',
           tension: 0.4
+        },
+        {
+          label: 'Glycogen Limit',
+          borderColor: '#ff4d4f',
+          borderDash: [6, 4],
+          data: getLimitSeries(),
+          yAxisID: 'glycogenAxis',
+          pointRadius: 0,
+          borderWidth: 1,
+          fill: false,
+          tension: 0
         }
       ]
     },
@@ -305,7 +366,9 @@ function pushMetabolicHistory(label, glycogenValue, influxValue) {
   metabolicChartInstance.data.labels = [...chartHistory.labels]
   metabolicChartInstance.data.datasets[0].data = [...chartHistory.glycogen]
   metabolicChartInstance.data.datasets[1].data = [...chartHistory.influx]
+  metabolicChartInstance.data.datasets[2].data = getLimitSeries()
   metabolicChartInstance.update('none')
+  saveChartHistory()
 }
 
 function handleSync() {
@@ -499,6 +562,8 @@ function metabolicLoop() {
   const selectMode = document.getElementById('metabolicMode')
   const mode = localStorage.getItem('biocore_mode') || (selectMode ? selectMode.value : 'Maintenance')
   const burnGPerMin = window.Calc ? window.Calc.calculateMinuteBurn(hr, bmr, activeKcalDay, mode) : 0
+  lastBurnRate = burnGPerMin
+  lastInfluxRate = Number(result.influxRateGPerMin.carbs || 0)
   const tv = document.getElementById('tvMetabolicStatus')
   if (tv) {
     const status = (result.influxRateGPerMin.carbs > burnGPerMin) ? 'STORING ENERGY' : 'BURNING FAT'
@@ -545,7 +610,7 @@ function metabolicLoop() {
       glycBar.classList.remove('glycogen-musclebuild')
     }
   }
-  pushMetabolicHistory(formatTimeHHmm(now), glyc, Number(result.influxRateGPerMin.carbs || 0))
+  pushMetabolicHistory(formatTimeHHmm(now), glyc, lastInfluxRate)
   updateFineNutritionLog()
 }
 
@@ -574,6 +639,7 @@ function updateTimes() {
   })
 }
 
+restoreChartHistory()
 attachHandlers()
 initMetabolicChart()
 initMetabolicMode()
@@ -583,4 +649,5 @@ startFineNutritionTicker()
 metabolicLoop()
 startMetabolicTicker()
 updateTimes()
+setInterval(saveChartHistory, CHART_HISTORY_SAVE_INTERVAL_MS)
 setInterval(updateTimes, 60000)
