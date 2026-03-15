@@ -9,8 +9,19 @@
 <body>
    <header>
       <div class="header-row">
-         <img src="images/logo.png" alt="Biocore logo" id="logo" onerror="this.style.display='none'" />
-         <h1>Biocore — Калкулатор на калории</h1>
+         <img src="logo_biocore.jpg" alt="BioCore Logo" id="logo" />
+         <style>
+.header-row {
+   display: flex;
+   align-items: center;
+}
+#logo {
+   width: 50px;
+  height: auto;
+   margin-right: 15px;
+}
+</style>
+         <h1>BioCore15: Kinetic Metabolic Tracker</h1>
          <button id="btnReload" class="small btn-sync">SYNC</button>
       </div>
    </header>
@@ -72,7 +83,7 @@
          <div id="tvFineNutritionStatus" style="font-family:monospace;white-space:pre-wrap;">Nutrition log will appear here</div>
       </section>
 
-      <section id="fineBottom" style="margin-bottom:12px;padding:10px;border-radius:6px;background:transparent;border:1px solid #222;">
+            <section id="fineBottom" style="margin-bottom:12px;padding:10px;border-radius:6px;background:transparent;border:1px solid #222;">
          <div style="margin-bottom:8px;font-weight:600;color:#ccc">Glycogen Tank</div>
          <div style="height:22px;background:#222;border-radius:4px;overflow:hidden;position:relative;">
             <div id="glycogenBar" style="height:100%;width:0%;background:#2a9d8f;color:white;display:flex;align-items:center;justify-content:center;font-size:12px">0 g</div>
@@ -80,6 +91,9 @@
          <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;color:#ddd">
             <div id="tvBloodInflux">Blood Influx: 0.00 g/min</div>
             <div id="tvMetabolicStatus">Метаболичен статус: -</div>
+         </div>
+         <div style="margin-top:16px;">
+            <canvas id="metabolicChart" style="width:100%;height:200px;"></canvas>
          </div>
       </section>
 
@@ -104,7 +118,10 @@
    <div id="jsonModal" style="display:none;position:fixed;left:0;right:0;top:10%;max-width:760px;margin:0 auto;background:#0b0b0b;color:#ddd;border:1px solid #222;padding:16px;border-radius:8px;z-index:2000">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
          <div style="font-weight:700;color:#fff">JSON Data Manager</div>
-         <div><button id="btnCloseJson" class="small" style="background:#333;color:#fff">CLOSE</button></div>
+         <div style="display:flex;gap:8px">
+            <button id="btnCloseJson" class="small" style="background:#333;color:#fff">CLOSE</button>
+            <button id="btnResetData" class="small" style="background:#d32f2f;color:#fff;border:none;padding:6px 12px;border-radius:6px">RESET DATA</button>
+         </div>
       </div>
       <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
          <label style="color:#ccc">Export date:</label>
@@ -123,7 +140,9 @@
          </div>
       </div>
    </div>
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
    <script src="js/calc.js"></script>
    <script src="js/app.js"></script>
 </body>
 </html>
+

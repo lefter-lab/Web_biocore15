@@ -3,6 +3,9 @@ header h1{margin:0 0 12px}
 /* Dark mode base (default) */
 body.dark { background:#121212; color:#ffffff }
 
+/* Generic hidden helper */
+.hidden { display: none !important }
+
 .header-row{display:flex;align-items:center;gap:12px}
 #logo{height:56px}
 .small{padding:6px 10px;font-size:13px;border-radius:6px}
@@ -47,6 +50,45 @@ body.dark { background:#121212; color:#ffffff }
 .glycogen-musclebuild{background:linear-gradient(90deg,#2b7cff,#77a9ff) !important}
 
 .btn-night{background:#FF9800;color:#000}
+
+/* Metabolic Chart Styling */
+#metabolicChart {
+    background: #0a0a0a;
+    border-radius: 8px;
+    border: 1px solid #222;
+}
+
+.chart-container {
+    position: relative;
+    margin: auto;
+    height: 200px;
+    width: 100%;
+}
+
+/* Manual Override buttons styling */
+.btn-hr {
+    background: #F44336;
+    border: none;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn-kcal {
+    background: #2196F3;
+    border: none;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn-hr:hover, .btn-kcal:hover {
+    opacity: 0.8;
+}
 
 /* Inline error messages */
 .error-text{color:#b42323;font-size:12px;margin-top:2px;display:none}
