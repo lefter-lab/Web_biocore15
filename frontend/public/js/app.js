@@ -37,6 +37,10 @@ let metabolicTimer = null
 let isSynced = false
 let editingIndex = null
 let editingTimestamp = null
+const LAST_ACCESS_DATE_KEY = 'last_access_date'
+const ITEM_ARCHIVE_PREFIX = 'biocore_items_archive_'
+const DAILY_BALANCE_KEY = 'biocore_daily_balance'
+const MIDNIGHT_CHECK_INTERVAL_MS = 60 * 60 * 1000
 
 function $(selector) {
   return document.querySelector(selector)
@@ -261,6 +265,35 @@ function handleRowDelete(ev) {
   renderFineLog()
 }
 
+function getCurrentDateString(date = new Date()) {
+  return date.toISOString().split('T')[0]
+}
+
+function archiveItemsForDate(dateString) {
+  if (!dateString) return
+  const entries = load()
+  if (!entries.length) return
+  localStorage.setItem(`${ITEM_ARCHIVE_PREFIX}${dateString}`, JSON.stringify({ date: dateString, entries }))
+}
+
+function checkMidnightReset() {
+  const today = getCurrentDateString()
+  const lastAccess = localStorage.getItem(LAST_ACCESS_DATE_KEY)
+  const isNewDay = lastAccess && lastAccess !== today
+  if (isNewDay) {
+    archiveItemsForDate(lastAccess)
+    save([])
+    localStorage.setItem('biocore_steps', '0')
+    localStorage.setItem('biocore_active_kcal', '0')
+    localStorage.setItem(DAILY_BALANCE_KEY, '0')
+    const tvBalance = document.getElementById('tvDailyBalance')
+    if (tvBalance) tvBalance.textContent = '0 kcal'
+    rerenderMeals()
+    renderFineLog()
+  }
+  localStorage.setItem(LAST_ACCESS_DATE_KEY, today)
+}
+
 function promptAndStoreNumber(storageKey, label) {
   const current = localStorage.getItem(storageKey) || ''
   const promptValue = prompt(`Enter ${label}`, current)
@@ -441,6 +474,8 @@ function handleNightSubmit(ev) {
 }
 
 function initApp() {
+  checkMidnightReset()
+  setInterval(checkMidnightReset, MIDNIGHT_CHECK_INTERVAL_MS)
   resetEditingState(document.getElementById('foodForm'))
   restoreChartHistory()
   attachHandlers()
