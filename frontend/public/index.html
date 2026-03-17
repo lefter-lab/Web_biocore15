@@ -3,13 +3,14 @@
 <head>
    <meta charset="utf-8" />
    <meta name="viewport" content="width=device-width,initial-scale=1" />
-   <title>Biocore Web</title>
+    <title>Biocore Web</title>
+    <link rel="icon" href="data:,">
    <link rel="stylesheet" href="css/styles.css" />
  </head>
 <body>
    <header>
       <div class="header-row">
-         <img src="logo_biocore.jpg" alt="BioCore Logo" id="logo" />
+         <img src="logo_biocore.jpg" alt="BioCore Logo" id="ivLogo" />
          <style>
 .header-row {
    display: flex;
@@ -59,7 +60,8 @@
    <main>
       <form id="foodForm">
          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <input id="foodName" placeholder="Храна" required />
+            <input id="foodName" placeholder="Храна" list="foodLibraryList" autocomplete="off" required />
+            <datalist id="foodLibraryList"></datalist>
             <input id="grams" type="number" placeholder="Грама" required />
             <input id="calPer100" type="number" placeholder="Кал/100г" required />
             <input id="fastCarbs" type="number" placeholder="Fast carbs (g)" />
@@ -69,6 +71,7 @@
             <input id="foodTimeOffset" type="number" placeholder="мин. назад" style="width:80px" />
             <button type="submit">Добави</button>
          </div>
+         <div id="caloriesPreview" class="cal-preview" aria-live="polite">Примерно 0 kcal</div>
       </form>
 
       <section id="quickActions" style="margin-bottom:12px;display:flex;gap:8px;align-items:center;">
@@ -76,6 +79,7 @@
          <button id="btnEditHR" class="small btn-edit">Edit HR</button>
          <button id="btnEditFood" class="small btn-food">Edit Food</button>
          <button id="btnNightTest" class="small btn-night" style="margin-left:8px;background:#FF9800;color:#000;border:none;padding:8px 12px;border-radius:8px">NIGHT TEST</button>
+         <button id="btnLibrary" class="small btn-library" style="margin-left:auto;background:#2a9d8f;color:#000;border:none;padding:8px 12px;border-radius:8px">Library</button>
       </section>
 
       <!-- single step panel under the logo (keeps UI tidy) -->
@@ -96,6 +100,7 @@
          <div style="margin-top:16px;">
             <canvas id="metabolicChart" style="width:100%;height:200px;"></canvas>
          </div>
+         <div id="adviceBox" aria-live="polite">AI Advisor се подготвя...</div>
       </section>
 
       <!-- removed duplicate log panel; tvFineNutritionStatus is the single authoritative console -->
@@ -141,7 +146,16 @@
          </div>
       </div>
    </div>
-      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+     <div id="libraryModal" class="modal hidden" aria-hidden="true">
+        <div class="modal-inner">
+           <div class="modal-header">
+              <div style="font-weight:700;color:#fff">Food Library</div>
+              <button id="btnCloseLibrary" class="small" style="background:#333;color:#fff">Close</button>
+           </div>
+           <div id="libraryList" class="library-list"></div>
+        </div>
+     </div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script type="module" src="js/app.js"></script>
 </body>
 </html>

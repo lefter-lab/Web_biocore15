@@ -4,6 +4,14 @@ import { Calc } from '../calc.js'
 export const chartHistory = { labels: [], glycogen: [], influx: [] }
 export let lastBurnRate = 0
 export let lastInfluxRate = 0
+let latestLoopData = null
+
+const FAT_BURN_STORAGE_KEY = 'biocore_fat_burned_today'
+const PROTEIN_THRESHOLD = 0.15
+const GLYCOGEN_LIMIT_GRAMS = 480
+const GLYCOGEN_KCAL_PER_GRAM = 4
+const CARDIO_KCAL_PER_MIN = 8
+const TARGET_PROTEIN_SURPLUS = 5
 
 export function absorbMealsForInterval(meals, nowMs, intervalMinutes) {
   if (!Calc || typeof Calc.absorbMealsForInterval !== 'function') {
@@ -26,6 +34,27 @@ export function pushMetabolicHistory(label, glycogenValue, influxValue, maxPoint
   }
 }
 
+function getCarbsPct(hr) {
+  if (hr > 150) return 0.9
+  if (hr > 120) return 0.7
+  if (hr < 75) return 0.3
+  return 0.5
+}
+
+function calculateMacroBurn(kcal, carbsPct, fatsPct) {
+  const proteinPct = PROTEIN_THRESHOLD
+  const totalPct = carbsPct + fatsPct + proteinPct
+  const normalized = totalPct > 0 ? 1 / totalPct : 0
+  const effectiveCarbsPct = carbsPct * normalized
+  const effectiveFatsPct = fatsPct * normalized
+  const effectiveProteinPct = proteinPct * normalized
+  return {
+    carbs: (kcal * effectiveCarbsPct) / 4,
+    fats: (kcal * effectiveFatsPct) / 9,
+    protein: (kcal * effectiveProteinPct) / 4
+  }
+}
+
 export function metabolicLoop(modeOverride) {
   const meals = loadMealsLog()
   const now = Date.now()
@@ -40,6 +69,7 @@ export function metabolicLoop(modeOverride) {
   const remainingCarbs = meals.reduce((sum, meal) => {
     return sum + (meal.remainingFast || 0) + (meal.remainingSlow || 0)
   }, 0)
+  const totalProteinIn = meals.reduce((sum, meal) => sum + (Number(meal.proteins) || 0), 0)
 
   const glycKey = 'biocore_glycogen'
   const fatKey = 'biocore_fat_from_carbs'
@@ -74,7 +104,16 @@ export function metabolicLoop(modeOverride) {
     ? 'Digesting'
     : (result.influxRateGPerMin.carbs > burnGPerMin ? 'STORING ENERGY' : 'BURNING FAT')
 
-  return {
+  const carbsPct = getCarbsPct(hr)
+  const fatsPct = Math.max(0, 1 - carbsPct - PROTEIN_THRESHOLD)
+  const restingBurn = calculateMacroBurn(bmr, carbsPct, fatsPct)
+  const activeBurn = calculateMacroBurn(activeKcalDay, carbsPct, fatsPct)
+  const totalBurn = calculateMacroBurn(bmr + activeKcalDay, carbsPct, fatsPct)
+  const burnSummary = { resting: restingBurn, active: activeBurn, total: totalBurn }
+  const fatBurnGrams = Math.max(0, burnSummary.total?.fats || 0)
+  localStorage.setItem(FAT_BURN_STORAGE_KEY, fatBurnGrams.toFixed(2))
+
+  const state = {
     mode,
     result,
     glycogen,
@@ -93,6 +132,45 @@ export function metabolicLoop(modeOverride) {
     timestamp: now,
     status,
     lastBurnRate,
-    lastInfluxRate
+    lastInfluxRate,
+    burnSummary,
+    fatBurnToday: fatBurnGrams,
+    totalProteinIn
   }
+  latestLoopData = state
+  return state
+}
+
+export function getMetabolicAdvice() {
+  if (!latestLoopData) {
+    return { text: 'Системата се калибрира, моля изчакайте...', level: 'info' }
+  }
+  const { glycogen, mode, burnSummary = {}, totalProteinIn = 0 } = latestLoopData
+  const proteinBurned = burnSummary.total?.protein || 0
+  const proteinSurplus = Math.max(0, totalProteinIn - proteinBurned)
+  const netChange = Number(lastInfluxRate || 0) - Number(lastBurnRate || 0)
+  if (glycogen > GLYCOGEN_LIMIT_GRAMS) {
+    const excessGrams = glycogen - GLYCOGEN_LIMIT_GRAMS
+    const excessCalories = Math.round(excessGrams * GLYCOGEN_KCAL_PER_GRAM)
+    const cardioMinutes = Math.max(1, Math.ceil(excessCalories / CARDIO_KCAL_PER_MIN))
+    return {
+      text: `Направете ${cardioMinutes} мин. кардио, за да изгорите излишните ${excessCalories} kcal.`,
+      level: 'warn'
+    }
+  }
+  if (mode === 'Muscle Build' && proteinSurplus < TARGET_PROTEIN_SURPLUS) {
+    const proteinTarget = Math.max(1, Math.ceil(TARGET_PROTEIN_SURPLUS - proteinSurplus))
+    return {
+      text: `Изяжте ${proteinTarget}g протеин, за да защитите мускулите.`,
+      level: 'warn'
+    }
+  }
+  if (mode === 'Fat Burn' && netChange > 0) {
+    const blockedMinutes = Math.min(35, Math.max(5, Math.round(netChange * 6)))
+    return {
+      text: `Инсулинът е висок. Горенето на мазнини е блокирано за още ${blockedMinutes} минути.`,
+      level: 'warn'
+    }
+  }
+  return { text: 'Метаболизмът е стабилен. Продължавай с плана.', level: 'info' }
 }

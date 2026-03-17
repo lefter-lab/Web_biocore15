@@ -7,7 +7,17 @@ body.dark { background:#121212; color:#ffffff }
 .hidden { display: none !important }
 
 .header-row{display:flex;align-items:center;gap:12px}
-#logo{height:56px}
+#ivLogo{height:56px}
+@keyframes logoPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+.logo-pulse-warning {
+    animation: logoPulse 1.4s ease infinite;
+    box-shadow: 0 0 12px rgba(255, 110, 0, 0.9);
+    filter: drop-shadow(0 0 10px rgba(255, 110, 0, 0.9));
+}
 .small{padding:6px 10px;font-size:13px;border-radius:6px}
 
 /* Card grid */
@@ -50,6 +60,7 @@ body.dark { background:#121212; color:#ffffff }
 .glycogen-musclebuild{background:linear-gradient(90deg,#2b7cff,#77a9ff) !important}
 
 .btn-night{background:#FF9800;color:#000}
+.btn-library{background:#2a9d8f;color:#000}
 
 /* Metabolic Chart Styling */
 #metabolicChart {
@@ -57,6 +68,65 @@ body.dark { background:#121212; color:#ffffff }
     border-radius: 8px;
     border: 1px solid #222;
 }
+
+#adviceBox {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(42, 157, 143, 0.8);
+    background: rgba(42, 157, 143, 0.12);
+    color: #d8ffea;
+    font-size: 14px;
+    min-height: 56px;
+    transition: transform 240ms ease, opacity 240ms ease;
+    position: relative;
+    overflow: hidden;
+}
+
+#adviceBox[data-level='warn'] {
+    border-color: rgba(255, 155, 59, 0.9);
+    background: rgba(255, 155, 59, 0.18);
+    color: #fff3df;
+}
+
+.advice-active {
+    animation: adviceGlow 2.6s ease;
+}
+
+@keyframes adviceGlow {
+    0% { transform: translateY(6px); opacity: 0.3; }
+    40% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(0); opacity: 0.9; }
+}
+
+.modal{
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.65);
+    z-index:2500;
+}
+.modal.hidden{display:none}
+.modal-inner{
+    width:90%;
+    max-width:420px;
+    background:#0b0b0b;
+    border:1px solid #222;
+    border-radius:12px;
+    padding:16px;
+}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.library-list{display:flex;flex-direction:column;gap:10px;max-height:320px;overflow:auto}
+.library-entry{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;border:1px solid #222;background:#141414}
+.library-entry__meta{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#d9d9d9}
+.library-entry__meta span{font-size:12px;color:#9fb2c5}
+.btn-library-delete{background:none;border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;padding:4px 10px;font-size:12px}
+.library-empty{color:#8f8f8f;font-style:italic}
 
 .chart-container {
     position: relative;
@@ -96,6 +166,7 @@ body.dark { background:#121212; color:#ffffff }
 form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 input{padding:6px;border:1px solid #ccc;border-radius:4px}
 button{padding:6px 10px}
+.cal-preview{margin-top:4px;font-size:0.85rem;color:#a0d8ff}
 table{width:100%;border-collapse:collapse;margin-bottom:12px}
 th,td{border:1px solid #eee;padding:6px;text-align:left}
 #totals{font-weight:bold}

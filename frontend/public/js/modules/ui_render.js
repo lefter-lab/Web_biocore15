@@ -8,8 +8,11 @@ const MAX_CHART_POINTS = 24
 
 const fitnessStatusNode = document.getElementById('tvFineNutritionStatus')
 const metabolicCanvas = document.getElementById('metabolicChart')
+const adviceBox = document.getElementById('adviceBox')
+const logoNode = document.getElementById('ivLogo')
 let metabolicChartInstance = null
 let fineNutritionTimer = null
+let adviceTimer = null
 
 function calcCalories(grams = 0, calPer100 = 0) {
   const g = Number(grams) || 0
@@ -100,7 +103,9 @@ export function render(onMealSelect) {
     total += cal
     const ts = it.timestamp || 0
     const timeText = ts ? getRelativeTime(ts) : ''
-    tr.innerHTML = `<td data-ts="${ts}">${timeText}</td><td>${it.name}</td><td>${it.grams}</td><td>${cal}</td><td><button data-idx="${idx}">X</button></td>`
+    const tsAttr = ts ?? ''
+    tr.dataset.ts = tsAttr
+    tr.innerHTML = `<td data-ts="${tsAttr}">${timeText}</td><td>${it.name}</td><td>${it.grams}</td><td>${cal}</td><td><button type="button" data-ts="${tsAttr}">X</button></td>`
     if (typeof onMealSelect === 'function') {
       tr.addEventListener('click', (evt) => {
         if (evt.target.closest('button')) return
@@ -115,6 +120,19 @@ export function render(onMealSelect) {
 
 export function renderFineLog() {
   const meals = loadMealsLog()
+  if (!Array.isArray(meals) || meals.length === 0) {
+    const fallbackLines = [
+      'Entries 0',
+      'Remaining carbs: Fast 0g / Slow 0g',
+      'Protein 0g • Fat 0g',
+      'TOTAL BLOOD INFLUX: 0.00 g/min',
+      'NET GLYCOGEN CHANGE: +0.00 g/min (разликата между Influx и Burn)',
+      '',
+      'Fat burn starts in: 0 min'
+    ]
+    if (fitnessStatusNode) fitnessStatusNode.textContent = fallbackLines.join('\n')
+    return
+  }
   const totals = { fast: 0, slow: 0, prot: 0, fat: 0 }
   const fastRate = Calc?.CONFIG?.ABSORPTION_RATES?.fastCarbs || 0
   const slowRate = Calc?.CONFIG?.ABSORPTION_RATES?.slowCarbs || 0
@@ -253,6 +271,24 @@ export function updateMetabolicChart(label, glycogenValue, influxValue) {
   metabolicChartInstance.data.datasets[1].data = [...chartHistory.influx]
   metabolicChartInstance.data.datasets[2].data = getLimitSeries()
   metabolicChartInstance.update('none')
+}
+
+export function updateAdviceBox(advice) {
+  if (!adviceBox) return
+  const message = advice?.text || 'AI Advisor наблюдава текущите данни.'
+  const level = advice?.level || 'info'
+  const warnState = level === 'warn' || level === 'danger'
+  adviceBox.textContent = message
+  adviceBox.dataset.level = level
+  adviceBox.classList.remove('advice-active')
+  // trigger animation
+  void adviceBox.offsetWidth
+  adviceBox.classList.add('advice-active')
+  if (logoNode) {
+    logoNode.classList.toggle('logo-pulse-warning', warnState)
+  }
+  if (adviceTimer) clearTimeout(adviceTimer)
+  adviceTimer = setTimeout(() => adviceBox.classList.remove('advice-active'), 2600)
 }
 
 export function startFineNutritionTicker() {
