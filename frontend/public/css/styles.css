@@ -1,47 +1,215 @@
-body { font-family: Arial, Helvetica, sans-serif; margin: 16px; background: #121212; color: #ffffff; }
-.hidden { display: none !important; }
+body{font-family:Arial,Helvetica,sans-serif;margin:16px;background:#121212;color:#ffffff}
+header h1{margin:0 0 12px}
+/* Dark mode base (default) */
+body.dark { background:#121212; color:#ffffff }
 
-/* Header & Profile */
-.header-row { margin-bottom: 20px; }
-#userName { font-size: 14px; }
+/* Generic hidden helper */
+.hidden { display: none !important }
+
+.header-row{display:flex;align-items:center;gap:12px}
+#ivLogo{height:56px}
+@keyframes logoPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+.logo-pulse-warning {
+    animation: logoPulse 1.4s ease infinite;
+    box-shadow: 0 0 12px rgba(255, 110, 0, 0.9);
+    filter: drop-shadow(0 0 10px rgba(255, 110, 0, 0.9));
+}
+.small{padding:6px 10px;font-size:13px;border-radius:6px}
 
 /* Card grid */
-.cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.card { background: #1e1e1e; padding: 15px; border-radius: 12px; border: 1px solid #333; }
-.card-label { font-size: 13px; color: #888; margin-bottom: 6px; display: flex; align-items: center; }
-.card-value { font-size: 22px; font-weight: 700; }
-.card-subtext { font-size: 11px; color: #666; }
+.cards-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.card{background:#1e1e1e;color:#fff;padding:10px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.4);text-align:center}
+.card .card-value{font-size:18px;font-weight:700;margin-top:6px;display:block}
+.card-phase{font-size:0.75rem;color:#9fb2c5;margin-top:4px}
+.card-label{display:flex;align-items:center;justify-content:center;gap:6px;font-size:0.85rem;font-weight:600;text-transform:none}
+.info-badge{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:50%;border:1px solid rgba(255,255,255,0.6);font-size:0.7rem;color:#fff;background:rgba(255,255,255,0.08);cursor:default;transition:transform 0.2s ease}
+.info-badge::after{content:attr(data-tooltip);position:absolute;left:50%;bottom:calc(100% + 6px);transform:translate(-50%,6px);background:#121212;border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:6px 10px;font-size:0.65rem;text-align:center;white-space:normal;max-width:180px;opacity:0;pointer-events:none;transition:opacity 0.2s ease,transform 0.2s ease}
+.info-badge::before{content:'';position:absolute;left:50%;bottom:calc(100% + 2px);transform:translateX(-50%);border:6px solid transparent;border-top-color:#121212;opacity:0;pointer-events:none;transition:opacity 0.2s ease}
+.info-badge:hover::after,.info-badge:focus-visible::after{opacity:1;transform:translate(-50%,0)}
+.info-badge:hover::before,.info-badge:focus-visible::before{opacity:1}
 
-/* Tooltips (?) */
-.info-badge {
-    display: inline-block;
-    width: 15px;
-    height: 15px;
-    background: #333;
-    color: #9fdbb5;
-    border-radius: 50%;
-    text-align: center;
-    font-size: 11px;
-    line-height: 15px;
-    margin-left: 6px;
-    cursor: help;
-    border: 1px solid #444;
+/* Step progress */
+.step-progress{width:100%;height:12px;background:#222;border-radius:8px;overflow:hidden;margin-top:8px}
+.step-bar{height:100%;width:40%;background:#2a9d8f}
+
+/* Step count */
+#tvStepCount{font-size:42px;text-align:center;font-weight:700;color:#fff;margin-top:6px}
+
+/* Log / console panel */
+#tvFineNutritionStatus{background:#000;color:#00ff88;font-family:monospace;padding:15px;border-radius:8px;min-height:160px;white-space:pre-wrap}
+
+/* small helper colors for top buttons */
+.btn-food{background:#FF9800;border:none;color:#000}
+.btn-sync{background:#4CAF50;border:none;color:#fff}
+.btn-edit{background:#F44336;border:none;color:#fff}
+
+/* Bottom fixed action bar */
+#bottomBar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;padding:8px 12px;background:#0f0f0f;border-top:1px solid #222}
+.bottom-btn{padding:10px 16px;border-radius:8px;background:#222;color:#fff;border:none}
+
+/* Glycogen bar styling */
+#glycogenBar{background:#2a9d8f;color:#fff;text-align:center}
+
+/* Mode selector container (prominent) */
+.mode-selector-container{margin:12px 0;text-align:center}
+.mode-selector-container select{padding:10px;border-radius:8px;background:#1a1a1a;color:#fff;border:2px solid #2a9d8f;font-size:16px}
+
+/* Night panel animation */
+.night-panel{max-height:500px;opacity:1;transition:max-height 300ms ease,opacity 300ms ease}
+.night-panel.hidden{max-height:0;opacity:0;overflow:hidden;padding-top:0;padding-bottom:0}
+
+/* Glycogen bar mode colors */
+.glycogen-fatburn{background:linear-gradient(90deg,#FF9800,#ffb76b) !important}
+.glycogen-musclebuild{background:linear-gradient(90deg,#2b7cff,#77a9ff) !important}
+
+.btn-night{background:#FF9800;color:#000}
+.btn-library{background:#2a9d8f;color:#000}
+
+/* Metabolic Chart Styling */
+#metabolicChart {
+    background: #0a0a0a;
+    border-radius: 8px;
+    border: 1px solid #222;
 }
-.info-badge:hover { background: #9fdbb5; color: #000; }
 
-/* Login Gate */
-.login-gate { position: fixed; inset: 0; background: #121212; display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.login-gate__content { background: #1e1e1e; padding: 30px; border-radius: 16px; text-align: center; width: 100%; max-width: 360px; border: 1px solid #333; }
-.auth-panel { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
-.auth-panel__form { display: flex; flex-direction: column; gap: 8px; }
-.auth-panel input, .signup-form input { padding: 12px; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; }
+#adviceBox {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(42, 157, 143, 0.8);
+    background: rgba(42, 157, 143, 0.12);
+    color: #d8ffea;
+    font-size: 14px;
+    min-height: 56px;
+    transition: transform 240ms ease, opacity 240ms ease;
+    position: relative;
+    overflow: hidden;
+}
 
-.btn-google { background: #ea4335; color: #fff; font-weight: 700; padding: 12px; border: none; border-radius: 8px; cursor: pointer; }
-.btn-email { background: #6fdcba; color: #000; font-weight: 700; padding: 12px; border: none; border-radius: 8px; cursor: pointer; }
-.btn-signup { background: #2a9d8f; color: #000; font-weight: 700; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 5px; }
-.link-button { background: none; border: none; color: #6fdcba; text-decoration: underline; cursor: pointer; margin-top: 10px; font-size: 13px; }
+#adviceBox[data-level='warn'] {
+    border-color: rgba(255, 155, 59, 0.9);
+    background: rgba(255, 155, 59, 0.18);
+    color: #fff3df;
+}
 
-.signup-form { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
+.advice-active {
+    animation: adviceGlow 2.6s ease;
+}
 
-@keyframes hrPulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-.hr-critical { color: #ff4d4f; animation: hrPulse 1.4s infinite; }
+@keyframes adviceGlow {
+    0% { transform: translateY(6px); opacity: 0.3; }
+    40% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(0); opacity: 0.9; }
+}
+
+.modal{
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.65);
+    z-index:2500;
+}
+.modal.hidden{display:none}
+.modal-inner{
+    width:90%;
+    max-width:420px;
+    background:#0b0b0b;
+    border:1px solid #222;
+    border-radius:12px;
+    padding:16px;
+}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.library-list{display:flex;flex-direction:column;gap:10px;max-height:320px;overflow:auto}
+.library-entry{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;border:1px solid #222;background:#141414}
+.library-entry__meta{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#d9d9d9}
+.library-entry__meta span{font-size:12px;color:#9fb2c5}
+.btn-library-delete{background:none;border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;padding:4px 10px;font-size:12px}
+.library-empty{color:#8f8f8f;font-style:italic}
+
+.chart-container {
+    position: relative;
+    margin: auto;
+    height: 200px;
+    width: 100%;
+}
+
+/* Manual Override buttons styling */
+.btn-hr {
+    background: #F44336;
+    border: none;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn-kcal {
+    background: #2196F3;
+    border: none;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn-hr:hover, .btn-kcal:hover {
+    opacity: 0.8;
+}
+
+/* Inline error messages */
+.error-text{color:#b42323;font-size:12px;margin-top:2px;display:none}
+.error-text[aria-live]{min-height:16px}
+form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+input{padding:6px;border:1px solid #ccc;border-radius:4px}
+button{padding:6px 10px}
+.cal-preview{margin-top:4px;font-size:0.85rem;color:#a0d8ff}
+table{width:100%;border-collapse:collapse;margin-bottom:12px}
+th,td{border:1px solid #eee;padding:6px;text-align:left}
+#totals{font-weight:bold}
+
+/* Locked state overlay */
+#loginGate {position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;z-index:4000}
+.login-gate__content {width:100%;max-width:480px;background:#050505;border-radius:18px;border:1px solid rgba(255,255,255,0.08);padding:32px 28px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.75)}
+.login-gate__content h2 {margin:0;font-size:28px;font-weight:700;color:#fff}
+.login-gate__subtitle {margin:6px 0 16px;color:#9fdbb5;font-size:15px}
+.login-gate__status {font-size:13px;color:#9fdbb5;margin-bottom:14px}
+.auth-panel {display:flex;flex-direction:column;gap:12px}
+.auth-panel__form {display:flex;flex-direction:column;gap:8px}
+.auth-panel input,
+.signup-form input {padding:10px 12px;border-radius:10px;border:1px solid #222;background:#0f0f0f;color:#fff;font-size:14px}
+.btn-google {background:#ea4335;color:#fff;border:none;padding:12px 18px;border-radius:12px;font-size:15px;font-weight:700}
+.btn-email,
+.btn-signup {background:#2a9d8f;color:#000;border:none;padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px}
+.signup-row {margin-top:6px}
+.link-button {background:none;border:none;color:#6fdcba;text-decoration:underline;font-size:13px;cursor:pointer}
+.signup-form {display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-top:8px}
+#appShell.locked {display:none !important}
+
+#tvHR.hr-critical {
+    color:#ff4d4f;
+    animation:hrPulse 1.4s ease-in-out infinite;
+    box-shadow:0 0 0 rgba(255,77,77,0.45);
+}
+
+@keyframes hrPulse {
+    0% {box-shadow:0 0 0 0 rgba(255,77,77,0.45)}
+    70% {box-shadow:0 0 0 14px rgba(255,77,77,0)}
+    100% {box-shadow:0 0 0 0 rgba(255,77,77,0)}
+}
+
+/* Profile header */
+.profile-header {margin-left:auto;display:flex;align-items:center;gap:10px}
+.profile-header__user {display:flex;align-items:center;gap:6px;color:#fff;font-size:14px;font-weight:600}
+.profile-header__user img {width:34px;height:34px;border-radius:50%;object-fit:cover;background:#111;border:1px solid #272727}
+.profile-header__signout {background:#d32f2f;border:none;color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer}

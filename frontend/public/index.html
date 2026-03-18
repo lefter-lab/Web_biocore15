@@ -12,75 +12,212 @@
       <div class="login-gate__content">
          <h2>Добре дошли в BioCore15.</h2>
          <p class="login-gate__subtitle">Моля, влезте в профила си, за да продължите.</p>
-         <div id="authStatus" class="login-gate__status">Не сте логнати</div>
-         
+         <div id="authStatus" class="login-gate__status" aria-live="polite">Не сте логнати</div>
          <div id="authPanel" class="auth-panel">
-            <button id="googleBtn" class="btn-google">Влез с Google</button>
-            
+            <button id="btnGoogleLogin" class="small btn-google">Влез с Google</button>
             <form id="emailAuthForm" class="auth-panel__form">
-               <input id="emailInput" type="email" placeholder="Email" required />
-               <input id="passwordInput" type="password" placeholder="Парола" required />
-               <button id="loginBtn" type="submit" class="btn-email">Влез</button>
+               <input id="emailInput" type="email" name="email" placeholder="Email" required autocomplete="username" />
+               <input id="passwordInput" type="password" name="password" placeholder="Парола" required autocomplete="current-password" />
+               <button type="submit" class="small btn-email">Влез</button>
             </form>
          </div>
-
          <div class="signup-row">
-            <button id="showSignupBtn" class="link-button">Нямате акаунт? Регистрирайте се</button>
+            <button id="signupTrigger" type="button" class="link-button">Нямате акаунт? Регистрирайте се тук.</button>
          </div>
+         <form id="emailSignupForm" class="signup-form hidden">
+            <input id="signupEmail" type="email" placeholder="Email" required autocomplete="email" />
+            <input id="signupPassword" type="password" placeholder="Парола" required autocomplete="new-password" />
+            <button type="submit" class="small btn-signup">Създай акаунт</button>
+         </form>
+      </div>
+   </div>
+   <div id="appShell">
+   <header>
+      <div class="header-row">
+         <img src="logo_biocore.jpg" alt="BioCore Logo" id="ivLogo" />
+         <style>
+.header-row {
+   display: flex;
+   align-items: center;
+}
+#logo {
+   width: 50px;
+  height: auto;
+   margin-right: 15px;
+}
+</style>
+         <h1>BioCore15: Kinetic Metabolic Tracker</h1>
+         <button id="btnReload" class="small btn-sync">SYNC</button>
+         <div class="profile-header">
+            <div id="authUserDetails" class="profile-header__user"></div>
+            <button id="btnSignOut" class="small profile-header__signout" style="display:none">Изход</button>
+         </div>
+      </div>
+   </header>
 
-         <div id="signupForm" class="signup-form hidden">
-            <input id="signupEmail" type="email" placeholder="Нов Email" />
-            <input id="signupPassword" type="password" placeholder="Нова Парола" />
-            <button id="doSignupBtn" class="btn-signup">Създай акаунт</button>
-            <button id="hideSignupBtn" class="link-button">Назад към вход</button>
+   <div id="headerSteps" style="text-align:center;margin-top:8px;">
+      <div id="tvStepCount">Стъпки: 0</div>
+      <div class="step-progress" aria-hidden="true" style="margin:10px auto;max-width:320px;"><div id="stepBar" class="step-bar"></div></div>
+   </div>
+   <section id="topCards" class="cards-grid" style="padding:10px;position:relative;">
+      <div class="card" id="cardHR">
+         <div class="card-label">
+            HR
+            <span class="info-badge" data-tooltip="Real-time or last recorded heart rate from your device." aria-label="Heart Rate info" tabindex="0">?</span>
+         </div>
+         <span class="card-value" id="tvHR">-</span>
+      </div>
+      <div class="card" id="cardTotalOut">
+         <div class="card-label">
+            Total Out
+            <span class="info-badge" data-tooltip="Total calories burned since 00:00 (BMR + Activity)." aria-label="Total Out info" tabindex="0">?</span>
+         </div>
+         <span class="card-value" id="tvTotalOut">-</span>
+         <div class="card-phase" id="tvMetabolicPhase">Phase: --</div>
+      </div>
+      <div class="card" id="cardDailyBalance">
+         <div class="card-label">
+            Balance
+            <span class="info-badge" data-tooltip="Daily caloric surplus/deficit based on BMR and heart rate." aria-label="Balance info" tabindex="0">?</span>
+         </div>
+         <span class="card-value" id="tvDailyBalance">-</span>
+      </div>
+      <div class="card" id="cardActiveKcal">Active Kcal<br><span class="card-value" id="tvActiveKcal">-</span></div>
+   </section>
+
+   <div class="mode-selector-container" style="text-align:center; margin: 15px 0;">
+      <label for="metabolicMode" style="color:#2a9d8f; font-weight:bold; margin-right:10px;">METABOLIC TARGET:</label>
+      <select id="metabolicMode" style="padding:10px; border-radius:8px; background:#1a1a1a; color:#fff; border:2px solid #2a9d8f; font-size:16px;">
+         <option value="Fat Burn">🔥 Fat Burn Mode</option>
+         <option value="Muscle Build">💪 Muscle Build Mode</option>
+         <option value="Maintenance">⚖️ Maintenance</option>
+         <option value="Brain Power">🧠 Brain Power</option>
+         <option value="Deep Recovery">💤 Deep Recovery</option>
+      </select>
+   </div>
+
+   <div id="nightTestPanel" class="night-panel hidden" style="padding:12px;margin-top:12px;background:#0f0f0f;border-radius:12px;border:1px solid #222;max-width:480px">
+      <div style="color:#fff;margin-bottom:8px;font-weight:700;font-size:16px">Night Test</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+         <label style="flex:1;min-width:150px;font-size:12px;color:#aaa">
+            Evening weight (kg)
+            <input id="nightEvening" type="number" step="any" placeholder="Вечерно тегло" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
+         </label>
+         <label style="flex:1;min-width:150px;font-size:12px;color:#aaa">
+            Morning weight (kg)
+            <input id="nightMorning" type="number" step="any" placeholder="Сутрешно тегло" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
+         </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+         <button id="btnNightSubmit" class="small" style="background:#2a9d8f;border:none;color:#000;padding:8px 12px;border-radius:6px">CALCULATE</button>
+         <span id="nightTestResult" style="flex:1;color:#fff;font-size:13px">Натисни "CALCULATE" за да видиш нощната загуба.</span>
+      </div>
+      <div id="nightTestHistoryContainer" style="border-top:1px solid #222;padding-top:10px;max-height:160px;overflow:auto">
+         <div style="color:#9fdbb5;font-size:13px;margin-bottom:6px">История</div>
+         <ul id="nightTestHistory" style="list-style:none;margin:0;padding:0;font-size:12px;color:#ddd;line-height:1.4"></ul>
+      </div>
+   </div>
+   <main>
+      <form id="foodForm">
+         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="foodName" placeholder="Храна" list="foodLibraryList" autocomplete="off" required />
+            <datalist id="foodLibraryList"></datalist>
+            <input id="grams" type="number" step="any" placeholder="Грама" required />
+            <input id="calPer100" type="number" step="any" placeholder="Кал/100г" required />
+            <input id="fastCarbs" type="number" step="any" placeholder="Fast carbs (g)" />
+            <input id="slowCarbs" type="number" step="any" placeholder="Slow carbs (g)" />
+            <input id="proteins" type="number" step="any" placeholder="Proteins (g)" />
+            <input id="fats" type="number" step="any" placeholder="Fats (g)" />
+            <input id="foodTimeOffset" type="number" placeholder="мин. назад" style="width:80px" />
+            <button type="submit">Добави</button>
+         </div>
+         <div id="caloriesPreview" class="cal-preview" aria-live="polite">Примерно 0 kcal</div>
+      </form>
+
+      <section id="quickActions" style="margin-bottom:12px;display:flex;gap:8px;align-items:center;">
+         <button id="btnEditKcal" class="small btn-edit">Edit KCAL</button>
+         <button id="btnEditHR" class="small btn-edit">Edit HR</button>
+         <button id="btnEditFood" class="small btn-food">Edit Food</button>
+         <button id="btnNightTest" class="small btn-night" style="margin-left:8px;background:#FF9800;color:#000;border:none;padding:8px 12px;border-radius:8px">NIGHT TEST</button>
+         <button id="btnLibrary" class="small btn-library" style="margin-left:auto;background:#2a9d8f;color:#000;border:none;padding:8px 12px;border-radius:8px">Library</button>
+      </section>
+
+      <!-- single step panel under the logo (keeps UI tidy) -->
+
+      <section id="nutritionStatus" style="margin-bottom:12px;padding:10px;border:1px solid #ddd;border-radius:6px;">
+         <div id="tvFineNutritionStatus" style="font-family:monospace;white-space:pre-wrap;">Nutrition log will appear here</div>
+      </section>
+
+            <section id="fineBottom" style="margin-bottom:12px;padding:10px;border-radius:6px;background:transparent;border:1px solid #222;">
+         <div style="margin-bottom:8px;font-weight:600;color:#ccc">Glycogen Tank</div>
+         <div style="height:22px;background:#222;border-radius:4px;overflow:hidden;position:relative;">
+            <div id="glycogenBar" style="height:100%;width:0%;background:#2a9d8f;color:white;display:flex;align-items:center;justify-content:center;font-size:12px">0 g</div>
+         </div>
+         <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;color:#ddd">
+            <div id="tvBloodInflux">Blood Influx: 0.00 g/min</div>
+            <div id="tvMetabolicStatus">Метаболичен статус: -</div>
+         </div>
+         <div style="margin-top:16px;">
+            <canvas id="metabolicChart" style="width:100%;height:200px;"></canvas>
+         </div>
+         <div id="adviceBox" aria-live="polite">AI Advisor се подготвя...</div>
+      </section>
+
+      <!-- removed duplicate log panel; tvFineNutritionStatus is the single authoritative console -->
+
+      <table id="list">
+         <thead>
+            <tr><th>Време</th><th>Храна</th><th>г</th><th>кал</th><th></th></tr>
+         </thead>
+         <tbody></tbody>
+      </table>
+
+      <div id="totals">Общо калории: <span id="total">0</span></div>
+   </main>
+   <footer id="bottomBar">
+      <button id="btnSteps" class="bottom-btn">STEPS</button>
+      <button id="btnProfile" class="bottom-btn">PROFILE</button>
+      <button id="btnJson" class="bottom-btn">JSON</button>
+   </footer>
+
+   <!-- JSON Modal -->
+   <div id="jsonModal" style="display:none;position:fixed;left:0;right:0;top:10%;max-width:760px;margin:0 auto;background:#0b0b0b;color:#ddd;border:1px solid #222;padding:16px;border-radius:8px;z-index:2000">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+         <div style="font-weight:700;color:#fff">JSON Data Manager</div>
+         <div style="display:flex;gap:8px">
+            <button id="btnCloseJson" class="small" style="background:#333;color:#fff">CLOSE</button>
+            <button id="btnResetData" class="small" style="background:#d32f2f;color:#fff;border:none;padding:6px 12px;border-radius:6px">RESET DATA</button>
+         </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+         <label style="color:#ccc">Export date:</label>
+         <input id="exportDate" type="date" style="background:#111;color:#fff;border:1px solid #333;padding:6px;border-radius:6px" />
+         <button id="btnExportTxt" class="small" style="background:#2a9d8f;border:none;color:#000">Export TXT</button>
+         <input id="jsonFileInput" type="file" accept="application/json" style="color:#fff" />
+      </div>
+      <div style="display:flex;gap:12px;">
+         <div style="flex:1;max-height:320px;overflow:auto;background:#000;padding:10px;border-radius:6px;border:1px solid #222">
+            <div style="font-weight:600;margin-bottom:8px;color:#9fdbb5">Today's meals (copy-paste friendly)</div>
+            <pre id="jsonList" style="color:#ddd;white-space:pre-wrap;font-family:monospace;font-size:13px"></pre>
+         </div>
+         <div style="width:260px;background:#0f0f0f;padding:10px;border-radius:6px;border:1px solid #222;color:#ccc">
+            <div style="font-weight:700;margin-bottom:8px">Import Tips</div>
+            <div style="font-size:13px;line-height:1.4">Import expects JSON objects with fields: <code>timestamp, foodName, fastCarbs, slowCarbs, proteins, fats, kcal</code>. The importer will validate and add valid items to the meals log.</div>
          </div>
       </div>
    </div>
-
-   <div id="appShell" class="hidden">
-      <header>
-         <div class="header-row" style="justify-content: space-between; display: flex; align-items: center; width: 100%;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-               <img id="ivLogo" src="logo_biocore.jpg" alt="Logo" style="height: 50px; border-radius: 8px;" />
-               <h1 style="margin:0;">BioCore15</h1>
-            </div>
-            <div style="display: flex; align-items: center; gap: 15px;">
-               <span id="userName" style="font-weight: 600; color: #6fdcba;"></span>
-               <button id="logoutBtn" class="small" style="background: #333; color: #fff; border: 1px solid #444; cursor: pointer; padding: 5px 10px; border-radius: 5px;">Изход</button>
-            </div>
-         </div>
-      </header>
-
-      <main>
-         <section class="cards-grid">
-            <div class="card">
-               <div class="card-label">Balance <span class="info-badge" title="Дневен калориен излишък/дефицит на база BMR и активност.">?</span></div>
-               <div id="tvBalance" class="card-value">0</div>
-            </div>
-            <div class="card">
-               <div class="card-label">Total Out <span class="info-badge" title="Общо изгорени калории от 00:00 часа (BMR + активност).">?</span></div>
-               <div id="tvTotalOut" class="card-value">0</div>
-               <div id="tvPhase" class="card-subtext">Phase: --</div>
-            </div>
-            <div class="card">
-               <div class="card-label">HR <span class="info-badge" title="Пулс в реално време или последно измерване.">?</span></div>
-               <div id="tvHR" class="card-value">--</div>
-            </div>
-            <div class="card">
-               <div class="card-label">Meals (kcal)</div>
-               <div id="tvMeals" class="card-value">0</div>
-            </div>
-         </section>
-
-         <div style="margin-top:20px; display:flex; gap:12px;">
-            <div style="flex:1; max-height:320px; overflow:auto; background:#000; padding:10px; border-radius:6px; border:1px solid #222">
-               <div style="font-weight:600; margin-bottom:8px; color:#9fdbb5">Today's meals (copy-paste friendly)</div>
-               <pre id="jsonList" style="color:#ddd; white-space:pre-wrap; font-family:monospace; font-size:13px"></pre>
-            </div>
-         </div>
-      </main>
+     <div id="libraryModal" class="modal hidden" aria-hidden="true">
+        <div class="modal-inner">
+           <div class="modal-header">
+              <div style="font-weight:700;color:#fff">Food Library</div>
+              <button id="btnCloseLibrary" class="small" style="background:#333;color:#fff">Close</button>
+           </div>
+           <div id="libraryList" class="library-list"></div>
+        </div>
+     </div>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <script type="module" src="js/app.js"></script>
    </div>
-
-   <script type="module" src="js/calc.js"></script>
 </body>
 </html>
+
