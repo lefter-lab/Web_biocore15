@@ -1,7 +1,14 @@
+import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/11.8.0/firebase-firestore.js'
 export const STORAGE_KEY = 'biocore_items'
 export const MEALS_LOG_KEY = 'biocore_meals_log'
 export const CHART_HISTORY_KEY = 'biocore_chart_history'
 export const FOOD_LIBRARY_KEY = 'biocore_food_library'
+const NIGHT_TEST_STORAGE_KEY = 'biocore_night_tests'
+let localStorageEnabled = true
+
+export function setLocalStorageEnabled(enabled = true) {
+  localStorageEnabled = Boolean(enabled)
+}
 
 export function safeParseJson(value, fallback = []) {
   if (!value) return fallback
@@ -30,6 +37,16 @@ function normalizeSearchString(value) {
   return (value || '').toString().trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
+function getLocalItem(key) {
+  if (!localStorageEnabled) return null
+  return localStorage.getItem(key)
+}
+
+function setLocalItem(key, value) {
+  if (!localStorageEnabled) return
+  localStorage.setItem(key, value)
+}
+
 function entriesShareSubstring(target, candidate, minLength = 3) {
   if (!target || !candidate) return false
   const maxLen = Math.min(4, target.length, candidate.length)
@@ -51,40 +68,150 @@ function fuzzyMatchStrings(target, candidate) {
   return entriesShareSubstring(target, candidate) || entriesShareSubstring(candidate, target)
 }
 
-/*
-Firebase integration sketch
-const firebaseConfig = { apiKey: '', authDomain: '', projectId: '' }
-function initFirebaseAuth() {
-  const app = initializeApp(firebaseConfig)
-  const auth = getAuth(app)
-  const db = getFirestore(app)
-  // wire auth state to biocore_user_id and logins
+let cloudContext = { userId: null, db: null }
+let pendingCloudPayload = {}
+let cloudWriteInProgress = false
+let cloudFlushTimer = null
+let cloudWritesEnabled = true
+
+function getCloudDocRef() {
+  if (!cloudContext.userId || !cloudContext.db) return null
+  return doc(cloudContext.db, 'users', cloudContext.userId, 'data', 'state')
 }
-function syncMeals(userId, payload) {
-  if (!userId) return
-  // push payload to Firestore collection biocore_meals/{userId}
+
+function hasCloudContext() {
+  return Boolean(cloudContext.userId && cloudContext.db)
 }
-*/
+
+function scheduleCloudFlush() {
+  if (cloudFlushTimer) return
+  cloudFlushTimer = setTimeout(() => {
+    cloudFlushTimer = null
+    void flushCloudPayload()
+  }, 120)
+}
+
+async function flushCloudPayload() {
+  if (cloudWriteInProgress) return
+  const docRef = getCloudDocRef()
+  if (!docRef || !Object.keys(pendingCloudPayload).length) return
+  cloudWriteInProgress = true
+  try {
+    await setDoc(docRef, pendingCloudPayload, { merge: true })
+    pendingCloudPayload = {}
+  } catch (err) {
+    console.error('Biocore: failed to flush cloud payload', err)
+  } finally {
+    cloudWriteInProgress = false
+  }
+}
+
+function queueCloudPayload(payload) {
+  if (!cloudWritesEnabled || !hasCloudContext()) return
+  pendingCloudPayload = { ...pendingCloudPayload, ...payload }
+  scheduleCloudFlush()
+}
+
+function ensureCloudContext(userId, db) {
+  cloudContext = { userId, db }
+}
+
+export function setCloudContext(userId, db) {
+  ensureCloudContext(userId, db)
+}
+
+export function clearCloudContext() {
+  cloudContext = { userId: null, db: null }
+  pendingCloudPayload = {}
+  if (cloudFlushTimer) {
+    clearTimeout(cloudFlushTimer)
+    cloudFlushTimer = null
+  }
+}
+
+export function setCloudWritesEnabled(enabled = true) {
+  cloudWritesEnabled = enabled
+}
+
+export async function pullCloudSnapshot() {
+  const docRef = getCloudDocRef()
+  if (!docRef) return null
+  try {
+    const snapshot = await getDoc(docRef)
+    return snapshot.exists() ? snapshot.data() : null
+  } catch (err) {
+    console.error('Biocore: failed to read cloud snapshot', err)
+    return null
+  }
+}
+
+export function exportLocalSnapshot() {
+  return {
+    biocore_items: load(),
+    biocore_meals_log: loadMealsLog(),
+    biocore_night_tests: loadNightTests()
+  }
+}
+
+export async function pushLocalSnapshotToCloud() {
+  const docRef = getCloudDocRef()
+  if (!docRef) return
+  try {
+    const payload = exportLocalSnapshot()
+    await setDoc(docRef, payload, { merge: true })
+  } catch (err) {
+    console.error('Biocore: failed to push local snapshot', err)
+  }
+}
+
+export async function applyRemoteSnapshot(snapshot) {
+  if (!snapshot) return
+  const { biocore_items, biocore_meals_log, biocore_night_tests } = snapshot
+  setCloudWritesEnabled(false)
+  try {
+    if (Array.isArray(biocore_items)) {
+      save(biocore_items)
+    }
+    if (Array.isArray(biocore_meals_log)) {
+      saveMealsLog(biocore_meals_log)
+    }
+    if (Array.isArray(biocore_night_tests)) {
+      saveNightTests(biocore_night_tests)
+    }
+  } finally {
+    setCloudWritesEnabled(true)
+  }
+}
+
+export function loadNightTests() {
+  return safeParseJson(getLocalItem(NIGHT_TEST_STORAGE_KEY), [])
+}
+
+export function saveNightTests(entries) {
+  setLocalItem(NIGHT_TEST_STORAGE_KEY, JSON.stringify(entries))
+  queueCloudPayload({ biocore_night_tests: entries })
+}
 
 export function load() {
-  return safeParseJson(localStorage.getItem(STORAGE_KEY), [])
+  return safeParseJson(getLocalItem(STORAGE_KEY), [])
 }
 
 export function save(items) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+  setLocalItem(STORAGE_KEY, JSON.stringify(items))
+  queueCloudPayload({ biocore_items: items })
 }
 
 export function normalizeFineMeal(source = {}) {
   const now = Date.now()
   const name = source.name || source.foodName || 'meal'
-  const grams = Number(source.grams) || 0
-  const calPer100 = Number(source.calPer100) || 0
+  const grams = parseFloat(source.grams) || 0
+  const calPer100 = parseFloat(source.calPer100) || 0
   const timestamp = Number(source.timestamp) || now
-  const fastCarbs = Number(source.fastCarbs) || 0
-  const slowCarbs = Number(source.slowCarbs) || 0
-  const proteins = Number(source.proteins) || 0
-  const fats = Number(source.fats) || 0
-  const kcal = Number(source.kcal) || Math.round((grams * calPer100) / 100)
+  const fastCarbs = parseFloat(source.fastCarbs) || 0
+  const slowCarbs = parseFloat(source.slowCarbs) || 0
+  const proteins = parseFloat(source.proteins) || 0
+  const fats = parseFloat(source.fats) || 0
+  const kcal = Number(source.kcal) || ((grams * calPer100) / 100)
   return {
     name,
     grams,
@@ -103,24 +230,26 @@ export function normalizeFineMeal(source = {}) {
 }
 
 export function loadMealsLog() {
-  const raw = localStorage.getItem(MEALS_LOG_KEY)
+  const raw = getLocalItem(MEALS_LOG_KEY)
   const base = raw ? safeParseJson(raw, []) : load()
   return base.map((item) => normalizeFineMeal(item))
 }
 
 export function saveMealsLog(meals) {
-  localStorage.setItem(MEALS_LOG_KEY, JSON.stringify(meals))
+  setLocalItem(MEALS_LOG_KEY, JSON.stringify(meals))
+  queueCloudPayload({ biocore_meals_log: meals })
 }
 
 export function loadFoodLibrary() {
-  const raw = safeParseJson(localStorage.getItem(FOOD_LIBRARY_KEY), [])
+  const raw = safeParseJson(getLocalItem(FOOD_LIBRARY_KEY), [])
   return raw
     .map((entry) => normalizeLibraryEntry(entry))
     .filter(Boolean)
 }
 
 export function saveFoodLibrary(items) {
-  localStorage.setItem(FOOD_LIBRARY_KEY, JSON.stringify(items))
+  setLocalItem(FOOD_LIBRARY_KEY, JSON.stringify(items))
+  queueCloudPayload({ biocore_items: items })
 }
 
 export function addFoodToLibrary(entry) {

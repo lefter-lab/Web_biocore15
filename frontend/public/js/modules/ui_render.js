@@ -341,4 +341,3 @@ export function updateTimes() {
     n.textContent = getRelativeTime(ts)
   })
 }
-

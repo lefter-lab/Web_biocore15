@@ -170,3 +170,27 @@ button{padding:6px 10px}
 table{width:100%;border-collapse:collapse;margin-bottom:12px}
 th,td{border:1px solid #eee;padding:6px;text-align:left}
 #totals{font-weight:bold}
+
+/* Locked state overlay */
+#loginGate {position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;z-index:4000}
+.login-gate__content {width:100%;max-width:480px;background:#050505;border-radius:18px;border:1px solid rgba(255,255,255,0.08);padding:32px 28px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.75)}
+.login-gate__content h2 {margin:0;font-size:28px;font-weight:700;color:#fff}
+.login-gate__subtitle {margin:6px 0 16px;color:#9fdbb5;font-size:15px}
+.login-gate__status {font-size:13px;color:#9fdbb5;margin-bottom:14px}
+.auth-panel {display:flex;flex-direction:column;gap:12px}
+.auth-panel__form {display:flex;flex-direction:column;gap:8px}
+.auth-panel input,
+.signup-form input {padding:10px 12px;border-radius:10px;border:1px solid #222;background:#0f0f0f;color:#fff;font-size:14px}
+.btn-google {background:#ea4335;color:#fff;border:none;padding:12px 18px;border-radius:12px;font-size:15px;font-weight:700}
+.btn-email,
+.btn-signup {background:#2a9d8f;color:#000;border:none;padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px}
+.signup-row {margin-top:6px}
+.link-button {background:none;border:none;color:#6fdcba;text-decoration:underline;font-size:13px;cursor:pointer}
+.signup-form {display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-top:8px}
+#appShell.locked {display:none !important}
+
+/* Profile header */
+.profile-header {margin-left:auto;display:flex;align-items:center;gap:10px}
+.profile-header__user {display:flex;align-items:center;gap:6px;color:#fff;font-size:14px;font-weight:600}
+.profile-header__user img {width:34px;height:34px;border-radius:50%;object-fit:cover;background:#111;border:1px solid #272727}
+.profile-header__signout {background:#d32f2f;border:none;color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer}

@@ -8,6 +8,30 @@
    <link rel="stylesheet" href="css/styles.css" />
  </head>
 <body>
+   <div id="loginGate" class="login-gate">
+      <div class="login-gate__content">
+         <h2>Добре дошли в BioCore15.</h2>
+         <p class="login-gate__subtitle">Моля, влезте в профила си, за да продължите.</p>
+         <div id="authStatus" class="login-gate__status" aria-live="polite">Не сте логнати</div>
+         <div id="authPanel" class="auth-panel">
+            <button id="btnGoogleLogin" class="small btn-google">Влез с Google</button>
+            <form id="emailAuthForm" class="auth-panel__form">
+               <input id="emailInput" type="email" name="email" placeholder="Email" required autocomplete="username" />
+               <input id="passwordInput" type="password" name="password" placeholder="Парола" required autocomplete="current-password" />
+               <button type="submit" class="small btn-email">Влез</button>
+            </form>
+         </div>
+         <div class="signup-row">
+            <button id="signupTrigger" type="button" class="link-button">Нямате акаунт? Регистрирайте се тук.</button>
+         </div>
+         <form id="emailSignupForm" class="signup-form hidden">
+            <input id="signupEmail" type="email" placeholder="Email" required autocomplete="email" />
+            <input id="signupPassword" type="password" placeholder="Парола" required autocomplete="new-password" />
+            <button type="submit" class="small btn-signup">Създай акаунт</button>
+         </form>
+      </div>
+   </div>
+   <div id="appShell">
    <header>
       <div class="header-row">
          <img src="logo_biocore.jpg" alt="BioCore Logo" id="ivLogo" />
@@ -24,6 +48,10 @@
 </style>
          <h1>BioCore15: Kinetic Metabolic Tracker</h1>
          <button id="btnReload" class="small btn-sync">SYNC</button>
+         <div class="profile-header">
+            <div id="authUserDetails" class="profile-header__user"></div>
+            <button id="btnSignOut" class="small profile-header__signout" style="display:none">Изход</button>
+         </div>
       </div>
    </header>
 
@@ -49,12 +77,25 @@
       </select>
    </div>
 
-   <div id="nightTestPanel" class="night-panel hidden" style="padding:10px;margin-top:8px;background:#0f0f0f;border-radius:8px;border:1px solid #222;max-width:420px">
-      <div style="color:#ddd;margin-bottom:6px;font-weight:600">Night Test — въведи тегло</div>
-      <div style="display:flex;gap:8px;align-items:center">
-         <input id="nightEvening" type="number" placeholder="Вечерно тегло (kg)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
-         <input id="nightMorning" type="number" placeholder="Сутрешно тегло (kg)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
-         <button id="btnNightSubmit" class="small" style="background:#2a9d8f;border:none;color:#000;padding:8px 10px;border-radius:6px">SUBMIT</button>
+   <div id="nightTestPanel" class="night-panel hidden" style="padding:12px;margin-top:12px;background:#0f0f0f;border-radius:12px;border:1px solid #222;max-width:480px">
+      <div style="color:#fff;margin-bottom:8px;font-weight:700;font-size:16px">Night Test</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+         <label style="flex:1;min-width:150px;font-size:12px;color:#aaa">
+            Evening weight (kg)
+            <input id="nightEvening" type="number" step="any" placeholder="Вечерно тегло" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
+         </label>
+         <label style="flex:1;min-width:150px;font-size:12px;color:#aaa">
+            Morning weight (kg)
+            <input id="nightMorning" type="number" step="any" placeholder="Сутрешно тегло" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
+         </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+         <button id="btnNightSubmit" class="small" style="background:#2a9d8f;border:none;color:#000;padding:8px 12px;border-radius:6px">CALCULATE</button>
+         <span id="nightTestResult" style="flex:1;color:#fff;font-size:13px">Натисни "CALCULATE" за да видиш нощната загуба.</span>
+      </div>
+      <div id="nightTestHistoryContainer" style="border-top:1px solid #222;padding-top:10px;max-height:160px;overflow:auto">
+         <div style="color:#9fdbb5;font-size:13px;margin-bottom:6px">История</div>
+         <ul id="nightTestHistory" style="list-style:none;margin:0;padding:0;font-size:12px;color:#ddd;line-height:1.4"></ul>
       </div>
    </div>
    <main>
@@ -62,12 +103,12 @@
          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <input id="foodName" placeholder="Храна" list="foodLibraryList" autocomplete="off" required />
             <datalist id="foodLibraryList"></datalist>
-            <input id="grams" type="number" placeholder="Грама" required />
-            <input id="calPer100" type="number" placeholder="Кал/100г" required />
-            <input id="fastCarbs" type="number" placeholder="Fast carbs (g)" />
-            <input id="slowCarbs" type="number" placeholder="Slow carbs (g)" />
-            <input id="proteins" type="number" placeholder="Proteins (g)" />
-            <input id="fats" type="number" placeholder="Fats (g)" />
+            <input id="grams" type="number" step="any" placeholder="Грама" required />
+            <input id="calPer100" type="number" step="any" placeholder="Кал/100г" required />
+            <input id="fastCarbs" type="number" step="any" placeholder="Fast carbs (g)" />
+            <input id="slowCarbs" type="number" step="any" placeholder="Slow carbs (g)" />
+            <input id="proteins" type="number" step="any" placeholder="Proteins (g)" />
+            <input id="fats" type="number" step="any" placeholder="Fats (g)" />
             <input id="foodTimeOffset" type="number" placeholder="мин. назад" style="width:80px" />
             <button type="submit">Добави</button>
          </div>
@@ -155,8 +196,9 @@
            <div id="libraryList" class="library-list"></div>
         </div>
      </div>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script type="module" src="js/app.js"></script>
+   </div>
 </body>
 </html>
 
