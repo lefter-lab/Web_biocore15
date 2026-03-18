@@ -29,6 +29,7 @@ import {
   handleSignOut,
   setLockedState
 } from './modules/auth.js'
+import { initActivityTracker } from './modules/activities.js'
 
 const CHART_HISTORY_SAVE_INTERVAL_MS = 60000
 const MIDNIGHT_CHECK_INTERVAL_MS = 60 * 60 * 1000
@@ -53,6 +54,7 @@ function initApp() {
     handleSignOut
   })
   initFirebaseAuth()
+  initActivityTracker()
   initMetabolicChart()
   initMetabolicMode()
   rerenderMeals()

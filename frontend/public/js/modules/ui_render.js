@@ -20,17 +20,23 @@ function calcCalories(grams = 0, calPer100 = 0) {
   return Math.round((g * c) / 100)
 }
 
+function getDateKey(timestamp) {
+  const ts = Number(timestamp)
+  if (!Number.isFinite(ts) || ts <= 0) return ''
+  return new Date(ts).toISOString().split('T')[0]
+}
+
 function getRelativeTime(timestamp) {
   if (!timestamp) return ''
   const now = Date.now()
   const diffMs = now - timestamp
   const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 1) return 'Току-що'
-  if (diffMin < 60) return `преди ${diffMin} минути`
+  if (diffMin < 1) return 'Just now'
+  if (diffMin < 60) return ` ${diffMin} minutes ago`
   const hours = Math.floor(diffMin / 60)
   const mins = diffMin % 60
-  if (mins === 0) return `преди ${hours} ч.`
-  return `преди ${hours} ч. и ${mins} мин.`
+if (mins === 0) return `${hours}h ago`
+return `${hours}h ${mins}m ago`
 }
 
 export function formatTimeHHmm(ts) {
@@ -97,10 +103,13 @@ export function render(onMealSelect) {
   if (!tbody) return
   tbody.innerHTML = ''
   let total = 0
+  const todayKey = getDateKey(Date.now())
   items.forEach((it, idx) => {
     const tr = document.createElement('tr')
     const cal = calcCalories(it.grams, it.calPer100)
-    total += cal
+    const entryKey = getDateKey(it.timestamp)
+    const isTodayEntry = entryKey && todayKey && entryKey === todayKey
+    if (isTodayEntry) total += cal
     const ts = it.timestamp || 0
     const timeText = ts ? getRelativeTime(ts) : ''
     const tsAttr = ts ?? ''
@@ -126,7 +135,7 @@ export function renderFineLog() {
       'Remaining carbs: Fast 0g / Slow 0g',
       'Protein 0g • Fat 0g',
       'TOTAL BLOOD INFLUX: 0.00 g/min',
-      'NET GLYCOGEN CHANGE: +0.00 g/min (разликата между Influx и Burn)',
+      'NET GLYCOGEN CHANGE: +0.00 g/min (The difference between Influx and Burn)',
       '',
       'Fat burn starts in: 0 min'
     ]
@@ -184,7 +193,7 @@ export function renderFineLog() {
     `Remaining carbs: Fast ${formatMacroValue(totals.fast)}g / Slow ${formatMacroValue(totals.slow)}g`,
     `Protein ${formatMacroValue(totals.prot)}g • Fat ${formatMacroValue(totals.fat)}g`,
     `TOTAL BLOOD INFLUX: ${totalBloodInflux} g/min`,
-    `NET GLYCOGEN CHANGE: ${netLabel} g/min (разликата между Influx и Burn)`
+    `NET GLYCOGEN CHANGE: ${netLabel} g/min (The difference between Influx and Burn)`
   ]
   const lines = [...summary]
   if (recent.length) {
@@ -200,7 +209,7 @@ export function updateStepDisplay(stepsValue) {
   const stored = localStorage.getItem('biocore_steps')
   const steps = Number(stepsValue ?? stored) || 0
   const tvStepCount = document.getElementById('tvStepCount')
-  if (tvStepCount) tvStepCount.textContent = `Стъпки: ${steps}`
+  if (tvStepCount) tvStepCount.textContent = `Steps: ${steps}`
   const stepBar = document.getElementById('stepBar')
   if (stepBar) {
     const pct = Math.min(100, (steps / STEP_GOAL) * 100)
@@ -275,7 +284,7 @@ export function updateMetabolicChart(label, glycogenValue, influxValue) {
 
 export function updateAdviceBox(advice) {
   if (!adviceBox) return
-  const message = advice?.text || 'AI Advisor наблюдава текущите данни.'
+  const message = advice?.text || 'AI Advisor is monitoring the current metrics.'
   const level = advice?.level || 'info'
   const warnState = level === 'warn' || level === 'danger'
   adviceBox.textContent = message

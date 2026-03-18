@@ -69,7 +69,7 @@ async function syncUserData(user) {
     updateNightTestPanel()
   } else if (hasLocal && !migrationPromptedUsers.has(user.uid)) {
     migrationPromptedUsers.add(user.uid)
-    const shouldUpload = window.confirm('Имате локални данни. Да ги качим в облака, за да ги запазим?')
+    const shouldUpload = window.confirm('You have local data. Would you like to upload it to the cloud to preserve it?')
     if (shouldUpload) {
       await pushLocalSnapshotToCloud()
     }
@@ -83,8 +83,8 @@ export function updateAuthUI(user) {
   if (!authStatusNode) return
   const currentUser = user || auth.currentUser
   if (currentUser) {
-    const label = currentUser.displayName || currentUser.email || 'потребител'
-    authStatusNode.textContent = `Влязъл: ${label}`
+    const label = currentUser.displayName || currentUser.email || 'user'
+    authStatusNode.textContent = `Logged in: ${label}`
     if (authUserDetailsNode) {
       if (currentUser.photoURL) {
         authUserDetailsNode.innerHTML = `<img src="${currentUser.photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;margin-right:6px;vertical-align:middle;"> ${label}`
@@ -94,7 +94,7 @@ export function updateAuthUI(user) {
     }
     if (btnSignOut) btnSignOut.style.display = 'inline-flex'
   } else {
-    authStatusNode.textContent = 'Не сте логнати'
+    authStatusNode.textContent = 'Not authenticated'
     if (authUserDetailsNode) authUserDetailsNode.textContent = ''
     if (btnSignOut) btnSignOut.style.display = 'none'
   }

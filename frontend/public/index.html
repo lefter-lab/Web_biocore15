@@ -5,29 +5,130 @@
    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Biocore Web</title>
     <link rel="icon" href="data:,">
-   <link rel="stylesheet" href="css/styles.css" />
+      <link rel="stylesheet" href="css/styles.css" />
+      <style>
+         .activity-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 3, 8, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 2500;
+         }
+         .activity-modal.hidden {
+            display: none;
+         }
+         .activity-modal-content {
+            width: min(540px, 100%);
+            background: #05070d;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
+            padding: 20px;
+            max-height: 90vh;
+            overflow-y: auto;
+         }
+         .activity-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+         }
+         .activity-step-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #f3f3f3;
+         }
+         .activity-step-description {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.75);
+            margin-top: 4px;
+         }
+         .activity-category-grid {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+         }
+         .category-btn {
+            border: 1px solid #2a9d8f;
+            border-radius: 10px;
+            padding: 12px;
+            background: #111729;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border 0.2s ease, transform 0.2s ease;
+         }
+         .category-btn:hover {
+            border-color: #5dd39e;
+            transform: translateY(-1px);
+         }
+         .activity-options-grid {
+            display: grid;
+            gap: 12px;
+            margin-top: 12px;
+         }
+         .activity-form-grid {
+            display: grid;
+            gap: 10px;
+            margin-top: 12px;
+         }
+         .activity-form-grid label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+         }
+         .activity-form-grid input,
+         .activity-form-grid select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #2a9d8f;
+            background: #0b0d18;
+            color: #fff;
+            font-size: 0.95rem;
+         }
+         .activity-wizard-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 16px;
+         }
+         .activity-note {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.65);
+         }
+         .custom-activity-group {
+            display: grid;
+            gap: 6px;
+            margin-top: 6px;
+         }
+      </style>
  </head>
 <body>
-   <div id="loginGate" class="login-gate">
+      <div id="loginGate" class="login-gate">
       <div class="login-gate__content">
-         <h2>Добре дошли в BioCore15.</h2>
-         <p class="login-gate__subtitle">Моля, влезте в профила си, за да продължите.</p>
-         <div id="authStatus" class="login-gate__status" aria-live="polite">Не сте логнати</div>
+         <h2>Wellcome to BioCore15.</h2>
+         <p class="login-gate__subtitle">Please sign in to continue.</p>
+         <div id="authStatus" class="login-gate__status" aria-live="polite">You are not logged in</div>
          <div id="authPanel" class="auth-panel">
-            <button id="btnGoogleLogin" class="small btn-google">Влез с Google</button>
+            <button id="btnGoogleLogin" class="small btn-google">Sign in with Google</button>
             <form id="emailAuthForm" class="auth-panel__form">
                <input id="emailInput" type="email" name="email" placeholder="Email" required autocomplete="username" />
-               <input id="passwordInput" type="password" name="password" placeholder="Парола" required autocomplete="current-password" />
-               <button type="submit" class="small btn-email">Влез</button>
+               <input id="passwordInput" type="password" name="password" placeholder="Password" required autocomplete="current-password" />
+               <button type="submit" class="small btn-email">Login</button>
             </form>
          </div>
          <div class="signup-row">
-            <button id="signupTrigger" type="button" class="link-button">Нямате акаунт? Регистрирайте се тук.</button>
+            <button id="signupTrigger" type="button" class="link-button">Don't have an account? Register here.</button>
          </div>
          <form id="emailSignupForm" class="signup-form hidden">
             <input id="signupEmail" type="email" placeholder="Email" required autocomplete="email" />
-            <input id="signupPassword" type="password" placeholder="Парола" required autocomplete="new-password" />
-            <button type="submit" class="small btn-signup">Създай акаунт</button>
+            <input id="signupPassword" type="password" placeholder="Password" required autocomplete="new-password" />
+            <button type="submit" class="small btn-signup">Create Account</button>
          </form>
       </div>
    </div>
@@ -50,13 +151,13 @@
          <button id="btnReload" class="small btn-sync">SYNC</button>
          <div class="profile-header">
             <div id="authUserDetails" class="profile-header__user"></div>
-            <button id="btnSignOut" class="small profile-header__signout" style="display:none">Изход</button>
+            <button id="btnSignOut" class="small profile-header__signout" style="display:none">Exit</button>
          </div>
       </div>
    </header>
 
    <div id="headerSteps" style="text-align:center;margin-top:8px;">
-      <div id="tvStepCount">Стъпки: 0</div>
+      <div id="tvStepCount">Steps: 0</div>
       <div class="step-progress" aria-hidden="true" style="margin:10px auto;max-width:320px;"><div id="stepBar" class="step-bar"></div></div>
    </div>
    <section id="topCards" class="cards-grid" style="padding:10px;position:relative;">
@@ -101,44 +202,44 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
          <label style="flex:1;min-width:150px;font-size:12px;color:#aaa">
             Evening weight (kg)
-            <input id="nightEvening" type="number" step="any" placeholder="Вечерно тегло" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
+            <input id="nightEvening" type="number" step="any" placeholder="Evening weight" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
          </label>
          <label style="flex:1;min-width:150px;font-size:12px;color:#aaa">
             Morning weight (kg)
-            <input id="nightMorning" type="number" step="any" placeholder="Сутрешно тегло" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
+            <input id="nightMorning" type="number" step="any" placeholder="Morning weight" style="width:100%;margin-top:4px;padding:8px;border-radius:6px;border:1px solid #333;background:#111;color:#fff" />
          </label>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
          <button id="btnNightSubmit" class="small" style="background:#2a9d8f;border:none;color:#000;padding:8px 12px;border-radius:6px">CALCULATE</button>
-         <span id="nightTestResult" style="flex:1;color:#fff;font-size:13px">Натисни "CALCULATE" за да видиш нощната загуба.</span>
+         <span id="nightTestResult" style="flex:1;color:#fff;font-size:13px">Tap "CALCULATE" to view last night&apos;s loss.</span>
       </div>
       <div id="nightTestHistoryContainer" style="border-top:1px solid #222;padding-top:10px;max-height:160px;overflow:auto">
-         <div style="color:#9fdbb5;font-size:13px;margin-bottom:6px">История</div>
+         <div style="color:#9fdbb5;font-size:13px;margin-bottom:6px">History</div>
          <ul id="nightTestHistory" style="list-style:none;margin:0;padding:0;font-size:12px;color:#ddd;line-height:1.4"></ul>
       </div>
    </div>
    <main>
       <form id="foodForm">
          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <input id="foodName" placeholder="Храна" list="foodLibraryList" autocomplete="off" required />
+            <input id="foodName" placeholder="Food" list="foodLibraryList" autocomplete="off" required />
             <datalist id="foodLibraryList"></datalist>
-            <input id="grams" type="number" step="any" placeholder="Грама" required />
-            <input id="calPer100" type="number" step="any" placeholder="Кал/100г" required />
+            <input id="grams" type="number" step="any" placeholder="Grams" required />
+            <input id="calPer100" type="number" step="any" placeholder="kcal/100g" required />
             <input id="fastCarbs" type="number" step="any" placeholder="Fast carbs (g)" />
             <input id="slowCarbs" type="number" step="any" placeholder="Slow carbs (g)" />
             <input id="proteins" type="number" step="any" placeholder="Proteins (g)" />
             <input id="fats" type="number" step="any" placeholder="Fats (g)" />
-            <input id="foodTimeOffset" type="number" placeholder="мин. назад" style="width:80px" />
-            <button type="submit">Добави</button>
+            <input id="foodTimeOffset" type="number" placeholder="min. ago" style="width:80px" />
+            <button type="submit">Add</button>
          </div>
-         <div id="caloriesPreview" class="cal-preview" aria-live="polite">Примерно 0 kcal</div>
+         <div id="caloriesPreview" class="cal-preview" aria-live="polite"></div>
       </form>
 
       <section id="quickActions" style="margin-bottom:12px;display:flex;gap:8px;align-items:center;">
-         <button id="btnEditKcal" class="small btn-edit">Edit KCAL</button>
-         <button id="btnEditHR" class="small btn-edit">Edit HR</button>
-         <button id="btnEditFood" class="small btn-food">Edit Food</button>
+         <button id="btnEditKcal" class="small btn-edit">Add KCAL</button>
+         <button id="btnEditHR" class="small btn-edit">Edit HR</button>         
          <button id="btnNightTest" class="small btn-night" style="margin-left:8px;background:#FF9800;color:#000;border:none;padding:8px 12px;border-radius:8px">NIGHT TEST</button>
+         <button id="btnAddActivity" class="small" style="background:#f4a261;color:#000;border:none;padding:8px 14px;border-radius:8px">Add Activity</button>
          <button id="btnLibrary" class="small btn-library" style="margin-left:auto;background:#2a9d8f;color:#000;border:none;padding:8px 12px;border-radius:8px">Library</button>
       </section>
 
@@ -155,24 +256,34 @@
          </div>
          <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;color:#ddd">
             <div id="tvBloodInflux">Blood Influx: 0.00 g/min</div>
-            <div id="tvMetabolicStatus">Метаболичен статус: -</div>
+            <div id="tvMetabolicStatus">Metabolic status: -</div>
          </div>
          <div style="margin-top:16px;">
+            <section style="margin-top: 20px; background: #1e1e1e; padding: 15px; border-radius: 12px; border: 1px solid #333;">
+   <div style="font-weight: 600; margin-bottom: 10px; color: #6fdcba;">Glycogen Tank & Metabolic Influx</div>
+   <div style="height: 200px; position: relative;">
             <canvas id="metabolicChart" style="width:100%;height:200px;"></canvas>
-         </div>
-         <div id="adviceBox" aria-live="polite">AI Advisor се подготвя...</div>
+         </div>        
+      
+</section>
+         <div id="adviceBox" aria-live="polite">AI Advisor is being prepared..</div>
       </section>
+      
 
       <!-- removed duplicate log panel; tvFineNutritionStatus is the single authoritative console -->
 
       <table id="list">
          <thead>
-            <tr><th>Време</th><th>Храна</th><th>г</th><th>кал</th><th></th></tr>
+            <tr>
+              <th>Time</th>
+              <th>Food</th>
+              <th>g</th>
+           <th>call</th><th></th></tr>
          </thead>
          <tbody></tbody>
       </table>
 
-      <div id="totals">Общо калории: <span id="total">0</span></div>
+      <div id="totals">Total calories: <span id="total">0</span></div>
    </main>
    <footer id="bottomBar">
       <button id="btnSteps" class="bottom-btn">STEPS</button>
@@ -206,6 +317,66 @@
          </div>
       </div>
    </div>
+     <div id="activityModal" class="activity-modal hidden" aria-hidden="true">
+        <div class="activity-modal-content">
+           <div class="activity-modal-header">
+              <div>
+                 <div class="activity-step-title">Log an Activity</div>
+                 <div class="activity-step-description">Category → Activity → Duration/intensity or enter manual calories.</div>
+              </div>
+              <button id="btnCloseActivity" class="small" style="background:#333;color:#fff;border:none;padding:6px 12px;border-radius:6px">Close</button>
+           </div>
+           <div id="activityWizard">
+              <div id="activityStep1" class="activity-step">
+                 <div class="activity-step-title">Choose a category</div>
+                 <div class="activity-step-description">Start by picking the type of movement that matches your session.</div>
+                 <div class="activity-category-grid">
+                    <button type="button" class="category-btn" data-category="cardio">Cardio</button>
+                    <button type="button" class="category-btn" data-category="strength">Strength</button>
+                    <button type="button" class="category-btn" data-category="other">Other</button>
+                 </div>
+              </div>
+              <div id="activityStep2" class="activity-step hidden">
+                 <div class="activity-step-title">Choose an activity</div>
+                 <div class="activity-step-description">Select a predefined activity or pick Custom to name your own.</div>
+                 <div id="activityOptions" class="activity-options-grid"></div>
+                 <div class="activity-wizard-footer">
+                    <button id="btnBackStep2" type="button" class="small" style="background:#333;color:#fff;border:none;padding:8px 12px;border-radius:8px">Back</button>
+                 </div>
+              </div>
+              <div id="activityStep3" class="activity-step hidden">
+                 <div class="activity-step-title">Duration & Intensity</div>
+                 <div class="activity-form-grid">
+                    <div>
+                       <label for="activityDuration">Duration (minutes)</label>
+                       <input id="activityDuration" type="number" min="1" step="1" value="30" />
+                    </div>
+                    <div>
+                       <label for="activityIntensity">Intensity</label>
+                       <select id="activityIntensity">
+                          <option value="low">Low</option>
+                          <option value="medium" selected>Medium</option>
+                          <option value="high">High</option>
+                       </select>
+                    </div>
+                    <div>
+                       <label for="activityCalories">Manual calories</label>
+                       <input id="activityCalories" type="number" min="0" step="1" placeholder="Optional override" />
+                    </div>
+                    <div id="customActivityContainer" class="custom-activity-group hidden">
+                       <label for="customActivityName">Custom activity name</label>
+                       <input id="customActivityName" type="text" placeholder="Give it a name" />
+                    </div>
+                 </div>
+                 <div class="activity-note">Estimates are duration × intensity, but manual calories override this calculation.</div>
+                 <div class="activity-wizard-footer">
+                    <button id="btnBackStep3" type="button" class="small" style="background:#333;color:#fff;border:none;padding:8px 12px;border-radius:8px">Back</button>
+                    <button id="btnSaveActivity" type="button" class="small" style="background:#2a9d8f;border:none;color:#000;padding:8px 12px;border-radius:8px">Save Activity</button>
+                 </div>
+              </div>
+           </div>
+        </div>
+     </div>
      <div id="libraryModal" class="modal hidden" aria-hidden="true">
         <div class="modal-inner">
            <div class="modal-header">

@@ -248,7 +248,7 @@ export function metabolicLoop(modeOverride) {
 
 export function getMetabolicAdvice() {
   if (!latestLoopData) {
-    return { text: 'Системата се калибрира, моля изчакайте...', level: 'info' }
+    return { text: 'System is calibrating, please wait...', level: 'info' }
   }
   const { glycogen, mode, burnSummary = {}, totalProteinIn = 0 } = latestLoopData
   const proteinBurned = burnSummary.total?.protein || 0
@@ -259,23 +259,23 @@ export function getMetabolicAdvice() {
     const excessCalories = Math.round(excessGrams * GLYCOGEN_KCAL_PER_GRAM)
     const cardioMinutes = Math.max(1, Math.ceil(excessCalories / CARDIO_KCAL_PER_MIN))
     return {
-      text: `Направете ${cardioMinutes} мин. кардио, за да изгорите излишните ${excessCalories} kcal.`,
+      text: `Do ${cardioMinutes} min. of cardio to burn the excess ${excessCalories} kcal.`,
       level: 'warn'
     }
   }
   if (mode === 'Muscle Build' && proteinSurplus < TARGET_PROTEIN_SURPLUS) {
     const proteinTarget = Math.max(1, Math.ceil(TARGET_PROTEIN_SURPLUS - proteinSurplus))
     return {
-      text: `Изяжте ${proteinTarget}g протеин, за да защитите мускулите.`,
+      text: `Eat ${proteinTarget}g of protein to protect your muscles.`,
       level: 'warn'
     }
   }
   if (mode === 'Fat Burn' && netChange > 0) {
     const blockedMinutes = Math.min(35, Math.max(5, Math.round(netChange * 6)))
     return {
-      text: `Инсулинът е висок. Горенето на мазнини е блокирано за още ${blockedMinutes} минути.`,
+      text: `Insulin is high. Fat burning is blocked for another ${blockedMinutes} minutes.`,
       level: 'warn'
     }
   }
-  return { text: 'Метаболизмът е стабилен. Продължавай с плана.', level: 'info' }
+  return { text: 'Metabolism is stable. Keep following the plan.', level: 'info' }
 }

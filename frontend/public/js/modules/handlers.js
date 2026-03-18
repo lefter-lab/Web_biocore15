@@ -32,6 +32,7 @@ import {
   updateMetabolicChart,
   updateAdviceBox
 } from './ui_render.js'
+import { getTodayActivities, calculateTotalActivityCalories } from './activities.js'
 import { Calc } from '../calc.js'
 
 const jsonModal = document.getElementById('jsonModal')
@@ -63,6 +64,13 @@ const emailSignupForm = document.getElementById('emailSignupForm')
 const emailAuthForm = document.getElementById('emailAuthForm')
 const btnGoogleLogin = document.getElementById('btnGoogleLogin')
 const btnSignOut = document.getElementById('btnSignOut')
+const totalNode = document.getElementById('total')
+const tvTotalOut = document.getElementById('tvTotalOut')
+const tvDailyBalance = document.getElementById('tvDailyBalance')
+const tvActiveKcalNode = document.getElementById('tvActiveKcal')
+const ACTIVITY_REFRESH_INTERVAL_MS = 60 * 1000
+let activityCaloriesCache = 0
+let lastActivityRefresh = 0
 
 let metabolicTimer = null
 let isSynced = false
@@ -145,7 +153,7 @@ function resetEditingState(formElement) {
   editingTimestamp = null
   lastSelectedLibraryEntry = null
   updateCaloriesPreview(0, 0)
-  setFormButtonText('Добави')
+  setFormButtonText('Add')
   if (formElement) formElement.reset()
 }
 
@@ -219,7 +227,7 @@ function updateCaloriesPreview(grams, calPer100) {
   const baseCal = parseFloatOrZero(calPer100, 0)
   const total = (baseCal * gramsValue) / 100
   const display = formatDecimal(total, 1) || '0'
-  caloriesPreviewNode.textContent = `Примерно ${display} kcal`
+  caloriesPreviewNode.textContent = `For example ${display} kcal`
 }
 
 function fillFoodFields(values = {}, options = {}) {
@@ -276,7 +284,7 @@ function handleMealSelect(meal, idx) {
   })
   const libraryMatch = findFoodInLibrary(meal.name)
   lastSelectedLibraryEntry = libraryMatch || null
-  setFormButtonText('Обнови Запис')
+  setFormButtonText('Update Entry')
   if (formElement) {
     formElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
     document.getElementById('foodName')?.focus()
@@ -420,7 +428,7 @@ function renderLibraryList() {
   if (!libraryListNode) return
   const library = loadFoodLibrary()
   if (!library.length) {
-    libraryListNode.innerHTML = '<div class="library-empty">Няма още записи в библиотеката.</div>'
+    libraryListNode.innerHTML = '<div class="library-empty">There are no more entries in the library.</div>'
     return
   }
   libraryListNode.innerHTML = library.map((entry) => {
@@ -474,6 +482,40 @@ function formatMacroLine(label, macros = {}) {
   const fats = (macros.fats || 0).toFixed(1)
   const protein = (macros.protein || 0).toFixed(1)
   return `${label}: Carbs: ${carbs}g | Fats: ${fats}g | Protein: ${protein}g`
+}
+
+function updateTotalsWithActivity(loopData, activityCalories = 0) {
+  if (!loopData) return
+  const accumulatedBmr = Calc.getAccumulatedBMR(loopData.bmr, new Date(loopData.timestamp))
+  const activeKcal = Number(loopData.activeKcalDay) || 0
+  const loggedActivity = Math.round(activityCalories || 0)
+  const totalOutValue = Math.round(accumulatedBmr + activeKcal + loggedActivity)
+  const activityNote = loggedActivity ? ` (includes ${loggedActivity} kcal logged)` : ''
+  if (tvTotalOut) {
+    tvTotalOut.textContent = `${totalOutValue} kcal so far${activityNote}`
+  }
+  if (tvActiveKcalNode) {
+    tvActiveKcalNode.textContent = `${Math.round(activeKcal)} kcal`
+  }
+  const totalInValue = Number(totalNode?.textContent || 0)
+  if (tvDailyBalance) {
+    tvDailyBalance.textContent = `${totalInValue - totalOutValue} kcal`
+  }
+}
+
+async function maybeRefreshActivityTotals(loopData) {
+  if (!loopData) return
+  updateTotalsWithActivity(loopData, activityCaloriesCache)
+  const now = Date.now()
+  if (lastActivityRefresh > 0 && now - lastActivityRefresh < ACTIVITY_REFRESH_INTERVAL_MS) return
+  try {
+    const activities = await getTodayActivities()
+    activityCaloriesCache = calculateTotalActivityCalories(activities)
+    lastActivityRefresh = now
+  } catch (error) {
+    console.error('Failed to refresh activity totals', error)
+  }
+  updateTotalsWithActivity(loopData, activityCaloriesCache)
 }
 
 function refreshProfilePanel(loopData) {
@@ -614,18 +656,25 @@ function handleFormSubmit(ev) {
   renderFineLog()
 }
 
-function handleRowDelete(ev) {
-  const btn = ev.target.closest('button[data-ts]')
-  if (!btn) return
-  const timestamp = toTimestamp(btn.dataset.ts)
-  if (timestamp === null) return
+function deleteMealEntryByTimestamp(rawTimestamp) {
+  const timestamp = toTimestamp(rawTimestamp)
+  if (timestamp === null) return false
   const removed = removeStoredEntriesByTimestamp(timestamp)
-  if (!removed) return
+  if (!removed) return false
   resetEditingState(document.getElementById('foodForm'))
   rerenderMeals()
+  renderFineLog()
   const loopData = metabolicLoop()
   refreshMetabolicStatus(undefined, loopData)
-  renderFineLog()
+  return true
+}
+
+function handleMealsTableClick(ev) {
+  const btn = ev.target.closest('button[data-ts]')
+  if (!btn) return
+  ev.stopPropagation()
+  ev.preventDefault()
+  deleteMealEntryByTimestamp(btn.dataset.ts)
 }
 
 function getCurrentDateString(date = new Date()) {
@@ -749,7 +798,6 @@ function updateMetabolicDisplay(loopData) {
     glycogen,
     mode,
     bmr,
-    activeKcalDay,
     status,
     burnSummary = {},
     totalProteinIn = 0,
@@ -782,23 +830,13 @@ function updateMetabolicDisplay(loopData) {
   }
   if (hrDisplayNode) hrDisplayNode.textContent = loopData.hr
   updateHrPulseState(loopData.hr)
-  const tvTotalOut = document.getElementById('tvTotalOut')
-  const accumulatedBmr = Calc.getAccumulatedBMR(bmr, new Date(loopData.timestamp))
-  const totalOut = Math.round(accumulatedBmr + (activeKcalDay || 0))
-  if (tvTotalOut) tvTotalOut.textContent = `${totalOut} kcal so far`
+  void maybeRefreshActivityTotals(loopData)
   const phaseInfo = getMetabolicPhaseInfo(loopData.timestamp)
   const tvMetabolicPhase = document.getElementById('tvMetabolicPhase')
   if (tvMetabolicPhase) {
     const pct = Math.round(phaseInfo.percent * 100)
     tvMetabolicPhase.textContent = `Phase: ${phaseInfo.name} (${pct}% BMR rate)`
   }
-  const totalIn = Number(document.getElementById('total')?.textContent || 0)
-  const tvDailyBalance = document.getElementById('tvDailyBalance')
-  if (tvDailyBalance) {
-    tvDailyBalance.textContent = `${totalIn - totalOut} kcal`
-  }
-  const tvActive = document.getElementById('tvActiveKcal')
-  if (tvActive) tvActive.textContent = `${Math.round(activeKcalDay)} kcal`
   const tvTopMet = document.getElementById('tvTopMetabolic')
   if (tvTopMet) {
     tvTopMet.textContent = `Glycogen ${glycogen.toFixed(0)}g • Influx ${result.influxRateGPerMin.carbs.toFixed(2)} g/min`
@@ -896,19 +934,19 @@ function appendNightTestEntry(entry) {
 function renderNightTestResult(entry) {
   if (!nightTestResultNode) return
   if (!entry) {
-    nightTestResultNode.textContent = 'Натисни "CALCULATE" за да видиш нощната загуба.'
+    nightTestResultNode.textContent = 'Click "CALCULATE" to see the nightly loss.'
     return
   }
   const grams = formatDecimal(entry.totalLossGrams, 1) || '0'
   const calories = formatDecimal(entry.calories, 0) || '0'
-  nightTestResultNode.textContent = `Снощи сте изгорили ${grams} грама телесна маса (~${calories} kcal).`
+  nightTestResultNode.textContent = `You burned last night ${grams} grams of body weight (~${calories} kcal).`
 }
 
 function renderNightTestHistory() {
   if (!nightTestHistoryNode) return
   const history = nightTestHistory
   if (!history.length) {
-    nightTestHistoryNode.innerHTML = '<li style="color:#777">Няма записани тестове.</li>'
+    nightTestHistoryNode.innerHTML = '<li style="color:#777">No recorded tests.</li>'
     return
   }
   nightTestHistoryNode.innerHTML = history.map((entry) => {
@@ -973,6 +1011,10 @@ export function attachHandlers(authCallbacks = {}) {
     libraryModal.addEventListener('click', (evt) => {
       if (evt.target === libraryModal) closeLibraryModal()
     })
+  }
+  const mealsTable = document.getElementById('list')
+  if (mealsTable) {
+    mealsTable.addEventListener('click', handleMealsTableClick, true)
   }
   if (signupTrigger) {
     signupTrigger.addEventListener('click', (ev) => {

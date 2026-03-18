@@ -120,6 +120,10 @@ export function setCloudContext(userId, db) {
   ensureCloudContext(userId, db)
 }
 
+export function getCloudContext() {
+  return { ...cloudContext }
+}
+
 export function clearCloudContext() {
   cloudContext = { userId: null, db: null }
   pendingCloudPayload = {}
