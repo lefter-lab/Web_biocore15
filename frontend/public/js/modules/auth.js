@@ -81,12 +81,13 @@ export function updateAuthUI(user) {
   const authUserDetailsNode = document.getElementById('authUserDetails')
   const btnSignOut = document.getElementById('btnSignOut')
   if (!authStatusNode) return
-  if (user) {
-    const label = user.displayName || user.email || 'потребител'
+  const currentUser = user || auth.currentUser
+  if (currentUser) {
+    const label = currentUser.displayName || currentUser.email || 'потребител'
     authStatusNode.textContent = `Влязъл: ${label}`
     if (authUserDetailsNode) {
-      if (user.photoURL) {
-        authUserDetailsNode.innerHTML = `<img src="${user.photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;margin-right:6px;vertical-align:middle;"> ${label}`
+      if (currentUser.photoURL) {
+        authUserDetailsNode.innerHTML = `<img src="${currentUser.photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;margin-right:6px;vertical-align:middle;"> ${label}`
       } else {
         authUserDetailsNode.textContent = label
       }
