@@ -17,6 +17,23 @@ export const Calc = {
   absorbMealsForInterval
 }
 
+function getAccumulatedBMR(dailyBMR, referenceDate = new Date()) {
+  if (!Number.isFinite(dailyBMR) || dailyBMR <= 0) return 0
+  const minutes = referenceDate.getHours() * 60 + referenceDate.getMinutes()
+  if (minutes <= 0) return 0
+  const clamp = (value, max) => Math.min(Math.max(value, 0), max)
+  if (minutes <= 540) {
+    const pct = minutes / 540
+    return (dailyBMR * 0.2) * clamp(pct, 1)
+  }
+  if (minutes <= 1080) {
+    const afterNine = clamp(minutes - 540, 0)
+    return (dailyBMR * 0.2) + (dailyBMR * 0.45) * clamp(afterNine / 540, 1)
+  }
+  const afterSixPm = clamp(minutes - 1080, 0)
+  return (dailyBMR * 0.65) + (dailyBMR * 0.35) * clamp(afterSixPm / 360, 1)
+}
+
 function calculateBMR(weight, height, age, gender) {
   let bmr = (10 * weight) + (6.25 * height) - (5 * age)
   return gender === 'male' ? bmr + 5 : bmr - 161
@@ -118,3 +135,5 @@ function absorbMealsForInterval(meals, nowMs, intervalSeconds) {
     }
   }
 }
+
+Calc.getAccumulatedBMR = getAccumulatedBMR

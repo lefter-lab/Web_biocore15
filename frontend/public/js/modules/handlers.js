@@ -1,4 +1,14 @@
-import { metabolicLoop, getMetabolicAdvice } from './engine.js'
+import {
+  metabolicLoop,
+  getMetabolicAdvice,
+  resetBmrTracking,
+  resetHrToBaseline,
+  getMetabolicPhaseInfo,
+  HR_MANUAL_TIMESTAMP_KEY,
+  HR_DECAY_BASELINE_KEY,
+  HR_ALERT_START_KEY,
+  HR_BASELINE
+} from './engine.js'
 import {
   STORAGE_KEY,
   MEALS_LOG_KEY,
@@ -22,6 +32,7 @@ import {
   updateMetabolicChart,
   updateAdviceBox
 } from './ui_render.js'
+import { Calc } from '../calc.js'
 
 const jsonModal = document.getElementById('jsonModal')
 const jsonList = document.getElementById('jsonList')
@@ -32,6 +43,9 @@ const libraryModal = document.getElementById('libraryModal')
 const libraryListNode = document.getElementById('libraryList')
 const nightTestResultNode = document.getElementById('nightTestResult')
 const nightTestHistoryNode = document.getElementById('nightTestHistory')
+const hrDisplayNode = document.getElementById('tvHR')
+const HR_CRITICAL_THRESHOLD = 120
+const HR_CRITICAL_DELAY_MS = 15 * 60 * 1000
 const btnNight = document.getElementById('btnNightTest')
 const btnNightSubmit = document.getElementById('btnNightSubmit')
 const btnJson = document.getElementById('btnJson')
@@ -630,6 +644,9 @@ export function resetStepsAtMidnight() {
   const lastAccess = localStorage.getItem(LAST_ACCESS_DATE_KEY)
   const isNewDay = lastAccess && lastAccess !== today
   if (isNewDay) {
+    resetBmrTracking()
+    resetHrToBaseline()
+    updateHrPulseState(HR_BASELINE)
     archiveItemsForDate(lastAccess)
     save([])
     localStorage.setItem('biocore_steps', '0')
@@ -644,16 +661,6 @@ export function resetStepsAtMidnight() {
   localStorage.setItem(LAST_ACCESS_DATE_KEY, today)
 }
 
-function promptAndStoreNumber(storageKey, label) {
-  const current = localStorage.getItem(storageKey) || ''
-  const promptValue = prompt(`Enter ${label}`, current)
-  if (promptValue === null) return
-  const parsed = Number(promptValue)
-  if (isNaN(parsed)) return alert('Invalid number')
-  localStorage.setItem(storageKey, parsed)
-  handleSync()
-}
-
 function handleEditKcal() {
   const current = Number(localStorage.getItem('biocore_active_kcal') || 0)
   const promptValue = prompt('Enter active kcal for today', current)
@@ -664,12 +671,47 @@ function handleEditKcal() {
   refreshMetabolicStatus()
 }
 
+function handleEditHR() {
+  const current = Number(localStorage.getItem('biocore_hr') || HR_BASELINE)
+  const promptValue = prompt('Enter heart rate (bpm)', current)
+  if (promptValue === null) return
+  const parsed = Number(promptValue)
+  if (!Number.isFinite(parsed) || parsed <= 0) return alert('Invalid heart rate')
+  localStorage.setItem('biocore_hr', parsed)
+  localStorage.setItem(HR_MANUAL_TIMESTAMP_KEY, String(Date.now()))
+  localStorage.setItem(HR_DECAY_BASELINE_KEY, String(parsed))
+  localStorage.removeItem(HR_ALERT_START_KEY)
+  refreshMetabolicStatus()
+  updateHrPulseState(parsed)
+}
+
 function handleEditFoodClick() {
   if (form) {
     form.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
   const name = document.getElementById('foodName')
   if (name) name.focus()
+}
+
+function updateHrPulseState(hr) {
+  if (!hrDisplayNode) return
+  if (hr > HR_CRITICAL_THRESHOLD) {
+    const now = Date.now()
+    const startTime = Number(localStorage.getItem(HR_ALERT_START_KEY) || 0)
+    if (!startTime) {
+      localStorage.setItem(HR_ALERT_START_KEY, String(now))
+      hrDisplayNode.classList.remove('hr-critical')
+      return
+    }
+    if (now - startTime >= HR_CRITICAL_DELAY_MS) {
+      hrDisplayNode.classList.add('hr-critical')
+      return
+    }
+    hrDisplayNode.classList.remove('hr-critical')
+    return
+  }
+  localStorage.removeItem(HR_ALERT_START_KEY)
+  hrDisplayNode.classList.remove('hr-critical')
 }
 
 function refreshAdvice() {
@@ -738,11 +780,18 @@ function updateMetabolicDisplay(loopData) {
     const detailHtml = detailLines.length ? `<br>${detailLines.join('<br>')}` : ''
     tv.innerHTML = `Mode: ${mode}<br>Glycogen: ${glycogen.toFixed(1)}g<br>Blood Influx: ${result.influxRateGPerMin.carbs.toFixed(2)} g/min<br>Status: ${status}<br>BMR: ${Math.round(bmr)} kcal${extra}${detailHtml}`
   }
-  const tvHR = document.getElementById('tvHR')
-  if (tvHR) tvHR.textContent = loopData.hr
+  if (hrDisplayNode) hrDisplayNode.textContent = loopData.hr
+  updateHrPulseState(loopData.hr)
   const tvTotalOut = document.getElementById('tvTotalOut')
-  const totalOut = Math.round(bmr + (activeKcalDay || 0))
-  if (tvTotalOut) tvTotalOut.textContent = `${totalOut} kcal/day`
+  const accumulatedBmr = Calc.getAccumulatedBMR(bmr, new Date(loopData.timestamp))
+  const totalOut = Math.round(accumulatedBmr + (activeKcalDay || 0))
+  if (tvTotalOut) tvTotalOut.textContent = `${totalOut} kcal so far`
+  const phaseInfo = getMetabolicPhaseInfo(loopData.timestamp)
+  const tvMetabolicPhase = document.getElementById('tvMetabolicPhase')
+  if (tvMetabolicPhase) {
+    const pct = Math.round(phaseInfo.percent * 100)
+    tvMetabolicPhase.textContent = `Phase: ${phaseInfo.name} (${pct}% BMR rate)`
+  }
   const totalIn = Number(document.getElementById('total')?.textContent || 0)
   const tvDailyBalance = document.getElementById('tvDailyBalance')
   if (tvDailyBalance) {
@@ -912,7 +961,7 @@ export function attachHandlers(authCallbacks = {}) {
   if (btnNight) btnNight.addEventListener('click', handleNightToggle)
   if (btnNightSubmit) btnNightSubmit.addEventListener('click', handleNightSubmit)
   if (btnKcal) btnKcal.addEventListener('click', handleEditKcal)
-  if (btnHr) btnHr.addEventListener('click', () => promptAndStoreNumber('biocore_hr', 'heart rate'))
+  if (btnHr) btnHr.addEventListener('click', handleEditHR)
   if (btnLibrary) btnLibrary.addEventListener('click', openLibraryModal)
   if (btnCloseLibrary) btnCloseLibrary.addEventListener('click', closeLibraryModal)
   if (libraryListNode) libraryListNode.addEventListener('click', handleLibraryListClick)
